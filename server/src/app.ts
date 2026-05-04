@@ -1,5 +1,6 @@
 import cors from 'cors';
 import express from 'express';
+import path from 'path';
 import apiRouter from './routes';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 
@@ -12,6 +13,7 @@ app.use(
   }),
 );
 app.use(express.json());
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 app.use('/api', apiRouter);
 

@@ -148,14 +148,14 @@ function UserManagementPage() {
 
   return (
     <section className="space-y-5">
-      <div className="rounded-2xl border border-[#1F2937] bg-[#111827] px-4 py-4 sm:px-5">
+      <div className="rounded-2xl border border-slate-200 bg-white/95 px-4 py-4 shadow-panel sm:px-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#9CA3AF]">Admin</p>
-            <h2 className="mt-2 text-2xl font-semibold text-[#E5E7EB]">User Management</h2>
-            <p className="mt-1 text-sm text-[#9CA3AF]">Search users, review roles, and update permissions with server-backed pagination.</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">Admin</p>
+            <h2 className="mt-2 text-2xl font-semibold text-slate-950">User Management</h2>
+            <p className="mt-1 text-sm text-slate-600">Search users, review roles, and update permissions with server-backed pagination.</p>
           </div>
-          <div className="rounded-2xl border border-[#1F2937] bg-[#0B1220] px-4 py-3 text-sm text-[#9CA3AF]">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
             {data.pagination.total} visible users
           </div>
         </div>
@@ -166,10 +166,9 @@ function UserManagementPage() {
         availableRoles={getVisibleFilterRoles(currentUser.role)}
         onSearchChange={handleSearchChange}
         onRoleChange={handleRoleChange}
-        dark
       />
 
-      {error ? <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{error}</div> : null}
+      {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
 
       <UserTable
         users={data.users}
@@ -207,7 +206,7 @@ function UserManagementPage() {
             </>
           }
         >
-          <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             This action is intended for `SUPER_ADMIN` only and cannot be undone from this screen.
           </div>
         </Modal>

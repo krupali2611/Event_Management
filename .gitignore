@@ -10,4 +10,5 @@ client/node_modules/
 client/dist/
 server/node_modules/
 server/dist/
-graphify-out/
+server/uploads/
+

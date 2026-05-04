@@ -11,10 +11,15 @@ const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
 const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
 const AdminDashboardPage = lazy(() => import('@/pages/admin/AdminDashboardPage'));
+const VenueManagementPage = lazy(() => import('@/pages/admin/VenueManagementPage'));
+const AddVenuePage = lazy(() => import('@/pages/admin/AddVenuePage'));
+const EditVenuePage = lazy(() => import('@/pages/admin/EditVenuePage'));
 const UserManagementPage = lazy(() => import('@/pages/admin/UserManagementPage'));
 const UserDetailsPage = lazy(() => import('@/pages/admin/UserDetailsPage'));
+const VenueBookingsAdminPage = lazy(() => import('@/pages/admin/VenueBookingsAdminPage'));
 const OrganizerPage = lazy(() => import('@/pages/OrganizerPage'));
 const OrganizerEventsPage = lazy(() => import('@/pages/organizer/OrganizerEventsPage'));
+const VenueBookingPage = lazy(() => import('@/pages/organizer/VenueBookingPage'));
 const AttendeePage = lazy(() => import('@/pages/AttendeePage'));
 
 function AppRoutes() {
@@ -39,6 +44,10 @@ function AppRoutes() {
             <Route path="admin" element={<AdminDashboardPage />} />
             <Route path="admin/users" element={<UserManagementPage />} />
             <Route path="admin/users/:id" element={<UserDetailsPage />} />
+            <Route path="admin/venues" element={<VenueManagementPage />} />
+            <Route path="admin/venues/new" element={<AddVenuePage />} />
+            <Route path="admin/venues/:id/edit" element={<EditVenuePage />} />
+            <Route path="admin/venue-bookings" element={<VenueBookingsAdminPage />} />
           </Route>
         </Route>
 
@@ -46,6 +55,7 @@ function AppRoutes() {
           <Route element={<OrganizerLayout />}>
             <Route path="organizer" element={<OrganizerPage />} />
             <Route path="organizer/events" element={<OrganizerEventsPage />} />
+            <Route path="organizer/venue-bookings" element={<VenueBookingPage />} />
           </Route>
         </Route>
 

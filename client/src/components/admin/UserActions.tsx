@@ -30,7 +30,7 @@ function UserActions({ currentUserRole, user, onChangeRole, onDelete }: UserActi
         disabled={!canEditRole(currentUserRole, user)}
         variant="ghost"
         size="icon"
-        className="h-9 w-9 rounded-lg border border-[#1F2937] bg-[#0B1220] text-[#9CA3AF] hover:bg-white/[0.04] hover:text-[#E5E7EB]"
+        className="h-9 w-9 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-900"
         icon={<Pencil className="h-4 w-4" />}
         aria-label={`Change role for ${user.name}`}
       >
@@ -42,7 +42,7 @@ function UserActions({ currentUserRole, user, onChangeRole, onDelete }: UserActi
           disabled={!canDelete(currentUserRole, user)}
           variant="ghost"
           size="icon"
-          className="h-9 w-9 rounded-lg border border-rose-500/20 bg-rose-500/10 text-rose-300 hover:bg-rose-500/15"
+          className="h-9 w-9 rounded-lg border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100"
           icon={<Trash2 className="h-4 w-4" />}
           aria-label={`Delete ${user.name}`}
         >

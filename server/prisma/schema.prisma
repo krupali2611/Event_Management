@@ -31,6 +31,8 @@ model User {
   updatedAt     DateTime       @updatedAt
   events        Event[]        @relation("OrganizerEvents")
   registrations Registration[]
+  venues        Venue[]        @relation("VenueCreator")
+  venueBookings VenueBooking[] @relation("VenueBookingCreator")
 }
 
 model Event {
@@ -57,4 +59,53 @@ model Registration {
   event     Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventId])
+}
+
+model Venue {
+  id          String   @id @default(cuid())
+  name        String
+  location    String
+  address     String?
+  capacity    Int
+  description String?
+  image       String?
+  amenities   String[]
+  isActive    Boolean  @default(true)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   User?    @relation("VenueCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  bookings    VenueBooking[]
+
+  @@unique([name, location])
+  @@index([location])
+  @@index([capacity])
+  @@index([isActive])
+}
+
+enum VENUE_BOOKING_STATUS {
+  BOOKED
+  CANCELLED
+}
+
+model VenueBooking {
+  id          String               @id @default(cuid())
+  venueId     String
+  startDate   DateTime
+  endDate     DateTime
+  startTime   String?
+  endTime     String?
+  status      VENUE_BOOKING_STATUS @default(BOOKED)
+  eventId     String?
+  createdById String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  venue       Venue                @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  createdBy   User?                @relation("VenueBookingCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([venueId, startDate, endDate])
+  @@index([status])
+  @@index([eventId])
+  @@index([createdById])
+  @@unique([venueId, startDate, endDate, startTime, endTime])
 }

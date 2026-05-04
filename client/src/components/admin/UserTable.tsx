@@ -38,14 +38,14 @@ function getVisiblePages(page: number, totalPages: number): number[] {
 
 const UserRow = memo(function UserRow({ currentUserRole, user, onChangeRole, onDelete }: UserRowProps) {
   return (
-    <tr className="border-b border-[#1F2937] even:bg-white/[0.01] hover:bg-white/[0.03]">
+    <tr className="border-b border-slate-200 even:bg-slate-50/70 hover:bg-slate-50">
       <td className="px-4 py-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-[#E5E7EB]">{user.name}</p>
-          <p className="mt-0.5 text-xs uppercase tracking-[0.18em] text-[#9CA3AF]">{user.isActive ? 'Active' : 'Inactive'}</p>
+          <p className="truncate text-sm font-medium text-slate-900">{user.name}</p>
+          <p className="mt-0.5 text-xs uppercase tracking-[0.18em] text-slate-500">{user.isActive ? 'Active' : 'Inactive'}</p>
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-[#9CA3AF]">{user.email}</td>
+      <td className="px-4 py-3 text-sm text-slate-600">{user.email}</td>
       <td className="px-4 py-3">
         <Badge role={user.role} />
       </td>
@@ -74,11 +74,11 @@ function UserTable({
   const visiblePages = getVisiblePages(pagination.page, pagination.totalPages);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#1F2937] bg-[#111827]">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-panel">
       <div className="overflow-x-auto">
         <table className="min-w-full">
-          <thead className="border-b border-[#1F2937] bg-[#0F172A]">
-            <tr className="text-left text-[11px] font-semibold uppercase tracking-[0.28em] text-[#9CA3AF]">
+          <thead className="border-b border-slate-200 bg-slate-50">
+            <tr className="text-left text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Role</th>
@@ -88,22 +88,22 @@ function UserTable({
           <tbody>
             {loading
               ? Array.from({ length: pagination.limit }).map((_, index) => (
-                  <tr key={`skeleton-${index}`} className="border-b border-[#1F2937]">
+                  <tr key={`skeleton-${index}`} className="border-b border-slate-200">
                     <td className="px-4 py-3">
-                      <div className="h-4 w-32 animate-pulse rounded bg-white/10" />
-                      <div className="mt-2 h-3 w-14 animate-pulse rounded bg-white/5" />
+                      <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
+                      <div className="mt-2 h-3 w-14 animate-pulse rounded bg-slate-100" />
                     </td>
                     <td className="px-4 py-3">
-                      <div className="h-4 w-48 animate-pulse rounded bg-white/10" />
+                      <div className="h-4 w-48 animate-pulse rounded bg-slate-200" />
                     </td>
                     <td className="px-4 py-3">
-                      <div className="h-6 w-24 animate-pulse rounded-full bg-white/10" />
+                      <div className="h-6 w-24 animate-pulse rounded-full bg-slate-200" />
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
-                        <div className="h-9 w-9 animate-pulse rounded-lg bg-white/10" />
-                        <div className="h-9 w-9 animate-pulse rounded-lg bg-white/10" />
-                        <div className="h-9 w-9 animate-pulse rounded-lg bg-white/10" />
+                        <div className="h-9 w-9 animate-pulse rounded-lg bg-slate-200" />
+                        <div className="h-9 w-9 animate-pulse rounded-lg bg-slate-200" />
+                        <div className="h-9 w-9 animate-pulse rounded-lg bg-slate-200" />
                       </div>
                     </td>
                   </tr>
@@ -123,12 +123,12 @@ function UserTable({
 
       {!loading && users.length === 0 ? (
         <div className="px-4 py-10 text-center">
-          <p className="text-sm font-medium text-[#E5E7EB]">No users found</p>
-          <p className="mt-1 text-sm text-[#9CA3AF]">Try a different search or role filter.</p>
+          <p className="text-sm font-medium text-slate-900">No users found</p>
+          <p className="mt-1 text-sm text-slate-500">Try a different search or role filter.</p>
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-3 border-t border-[#1F2937] px-4 py-3 text-sm text-[#9CA3AF] sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <p>
             Page {pagination.page} of {pagination.totalPages} | {pagination.total} users
@@ -138,7 +138,7 @@ function UserTable({
             <select
               value={pagination.limit}
               onChange={(event) => onPageSizeChange(Number(event.target.value))}
-              className="rounded-lg border border-[#1F2937] bg-[#0B1220] px-2.5 py-1.5 text-sm text-[#E5E7EB] outline-none focus:border-[#6366F1]"
+              className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-brand-500"
             >
               {[10, 20, 50].map((size) => (
                 <option key={size} value={size}>
@@ -154,7 +154,7 @@ function UserTable({
             disabled={pagination.page <= 1}
             onClick={() => onPageChange(pagination.page - 1)}
             variant="ghost"
-            className="rounded-lg border border-[#1F2937] bg-[#0B1220] px-3 py-2 text-[#E5E7EB] hover:bg-white/[0.04]"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-700 hover:bg-slate-50"
             icon={<ChevronLeft className="h-4 w-4" />}
           >
             Previous
@@ -167,8 +167,8 @@ function UserTable({
               aria-current={pageNumber === pagination.page ? 'page' : undefined}
               className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
                 pageNumber === pagination.page
-                  ? 'bg-[#6366F1] text-white'
-                  : 'border border-[#1F2937] bg-[#0B1220] text-[#E5E7EB] hover:bg-white/[0.04]'
+                  ? 'bg-brand-500 text-white'
+                  : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
               }`}
             >
               {pageNumber}
@@ -178,7 +178,7 @@ function UserTable({
             disabled={pagination.page >= pagination.totalPages}
             onClick={() => onPageChange(pagination.page + 1)}
             variant="ghost"
-            className="rounded-lg border border-[#1F2937] bg-[#0B1220] px-3 py-2 text-[#E5E7EB] hover:bg-white/[0.04]"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-700 hover:bg-slate-50"
             icon={<ChevronRight className="h-4 w-4" />}
           >
             Next

@@ -1,11 +1,10 @@
-import { Activity, Shield, Users } from 'lucide-react';
+import { Building2, Shield, Users } from 'lucide-react';
 import Card from '@/components/ui/Card';
-import Badge from '@/components/ui/Badge';
 
 const stats = [
-  { label: 'Active operators', value: '128', icon: Users },
-  { label: 'Open escalations', value: '06', icon: Shield },
-  { label: 'Live sessions', value: '1.2k', icon: Activity },
+  { label: 'Users', icon: Users },
+  { label: 'Venues', icon: Building2 },
+  { label: 'Roles', icon: Shield },
 ];
 
 function AdminDashboardPage() {
@@ -16,13 +15,12 @@ function AdminDashboardPage() {
           const Icon = stat.icon;
 
           return (
-            <Card key={stat.label} tone="dark" className="p-5">
+            <Card key={stat.label} className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-slate-400">{stat.label}</p>
-                  <p className="mt-3 text-3xl font-bold text-white">{stat.value}</p>
+                  <p className="text-sm text-slate-500">{stat.label}</p>
                 </div>
-                <div className="rounded-2xl bg-blue-500/15 p-3 text-blue-300">
+                <div className="rounded-2xl bg-brand-50 p-3 text-brand-700">
                   <Icon className="h-5 w-5" />
                 </div>
               </div>
@@ -31,26 +29,19 @@ function AdminDashboardPage() {
         })}
       </div>
 
-      <Card tone="dark" className="p-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-300">Security Posture</p>
-            <h2 className="mt-3 text-2xl font-bold text-white">Role-aware governance stays active across the platform.</h2>
+      <Card className="p-6">
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm text-slate-500">Users</p>
+            <p className="mt-2 text-lg font-semibold text-slate-900">Manage roles and status</p>
           </div>
-          <Badge color="green">Stable</Badge>
-        </div>
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
-            <p className="text-sm text-slate-400">Privileges segmented</p>
-            <p className="mt-2 text-lg font-semibold text-slate-100">SUPER_ADMIN controls status changes</p>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm text-slate-500">Venues</p>
+            <p className="mt-2 text-lg font-semibold text-slate-900">Create and update venues</p>
           </div>
-          <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
-            <p className="text-sm text-slate-400">Audit-friendly actions</p>
-            <p className="mt-2 text-lg font-semibold text-slate-100">Compact, data-first management flow</p>
-          </div>
-          <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
-            <p className="text-sm text-slate-400">Performance</p>
-            <p className="mt-2 text-lg font-semibold text-slate-100">Paginated queries with filtered retrieval</p>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm text-slate-500">Access</p>
+            <p className="mt-2 text-lg font-semibold text-slate-900">Protected admin routes</p>
           </div>
         </div>
       </Card>

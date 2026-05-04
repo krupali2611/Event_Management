@@ -1,4 +1,4 @@
-import { CalendarDays, LayoutGrid } from 'lucide-react';
+import { CalendarDays, LayoutGrid, MapPinned } from 'lucide-react';
 import { Outlet } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Sidebar from '@/components/layout/Sidebar';
@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 const items = [
   { to: '/organizer', label: 'Overview', icon: LayoutGrid },
   { to: '/organizer/events', label: 'Events', icon: CalendarDays },
+  { to: '/organizer/venue-bookings', label: 'Venue Bookings', icon: MapPinned },
 ];
 
 function OrganizerLayout() {
