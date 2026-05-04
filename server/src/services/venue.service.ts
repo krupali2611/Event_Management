@@ -119,7 +119,7 @@ export async function getVenues(query: VenueListQuery): Promise<PaginatedVenuesD
   const whereClause: Prisma.VenueWhereInput = {
     ...(query.location ? { location: { contains: query.location, mode: 'insensitive' } } : {}),
     ...(query.minCapacity ? { capacity: { gte: query.minCapacity } } : {}),
-    ...(query.isActive === undefined ? {} : { isActive: query.isActive }),
+    ...(query.isActive !== undefined ? { isActive: query.isActive } : query.includeInactive ? {} : { isActive: true }),
     ...(query.search
       ? {
           OR: [

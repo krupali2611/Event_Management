@@ -22,6 +22,7 @@ export interface VenueListFilters {
   location: string;
   minCapacity: string;
   status: '' | 'ACTIVE' | 'INACTIVE';
+  includeInactive?: boolean;
 }
 
 export interface VenueListData {

@@ -68,7 +68,7 @@ function VenueBookingPage() {
       setError(null);
       const venueResponse = await venueService.getVenues({
         page: 1,
-        limit: 100,
+        limit: 50,
         search: '',
         location: '',
         minCapacity: '',

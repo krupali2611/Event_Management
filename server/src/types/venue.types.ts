@@ -34,6 +34,7 @@ export interface VenueListQuery {
   location?: string;
   minCapacity?: number;
   isActive?: boolean;
+  includeInactive?: boolean;
 }
 
 export interface CreateVenueInput {

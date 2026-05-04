@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import authRouter from './auth.routes';
+import eventRouter from './event.routes';
 import healthRouter from './healthRoutes';
 import userRouter from './user.routes';
 import venueBookingRouter from './venue-booking.routes';
@@ -10,6 +11,7 @@ const apiRouter = Router();
 apiRouter.use('/', healthRouter);
 apiRouter.use('/auth', authRouter);
 apiRouter.use('/users', userRouter);
+apiRouter.use('/events', eventRouter);
 apiRouter.use('/venues', venueRouter);
 apiRouter.use('/venue-bookings', venueBookingRouter);
 

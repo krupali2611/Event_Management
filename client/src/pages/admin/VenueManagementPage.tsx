@@ -16,6 +16,7 @@ const defaultFilters: VenueListFilters = {
   location: '',
   minCapacity: '',
   status: '',
+  includeInactive: true,
 };
 
 const emptyData: VenueListData = {

@@ -44,7 +44,7 @@ function VenueBookingsAdminPage() {
     try {
       const response = await venueService.getVenues({
         page: 1,
-        limit: 100,
+        limit: 50,
         search: '',
         location: '',
         minCapacity: '',

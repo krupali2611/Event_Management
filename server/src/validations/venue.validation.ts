@@ -43,6 +43,10 @@ export const venueListQuerySchema = z.object({
 
       return value === 'true';
     }),
+  includeInactive: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((value) => value === 'true'),
 });
 
 export const createVenueBodySchema = z.object({

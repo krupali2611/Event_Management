@@ -36,16 +36,29 @@ model User {
 }
 
 model Event {
-  id            String         @id @default(cuid())
-  title         String
-  description   String
-  location      String
-  date          DateTime
-  organizerId   String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  organizer     User           @relation("OrganizerEvents", fields: [organizerId], references: [id], onDelete: Restrict)
-  registrations Registration[]
+  id             String         @id @default(uuid())
+  title          String
+  description    String?
+  category       String
+  startDate      DateTime
+  endDate        DateTime
+  startTime      String?
+  endTime        String?
+  attendeeLimit  Int
+  venueId        String?
+  organizerId    String
+  status         String         @default("draft")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  organizer      User           @relation("OrganizerEvents", fields: [organizerId], references: [id], onDelete: Restrict)
+  venue          Venue?         @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  registrations  Registration[]
+
+  @@index([organizerId])
+  @@index([venueId])
+  @@index([category])
+  @@index([status])
+  @@index([startDate, endDate])
 }
 
 model Registration {
@@ -76,6 +89,7 @@ model Venue {
   updatedAt   DateTime @updatedAt
   createdBy   User?    @relation("VenueCreator", fields: [createdById], references: [id], onDelete: SetNull)
   bookings    VenueBooking[]
+  events      Event[]
 
   @@unique([name, location])
   @@index([location])

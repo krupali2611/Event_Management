@@ -16,7 +16,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 const venueRouter = Router();
 
 venueRouter.use(authenticate);
-venueRouter.get('/', requireRole('ADMIN', 'SUPER_ADMIN', 'ORGANIZER'), asyncHandler(getVenuesController));
+venueRouter.get('/', requireRole('ADMIN', 'SUPER_ADMIN', 'ORGANIZER', 'ATTENDEE'), asyncHandler(getVenuesController));
 venueRouter.post('/', requireRole('ADMIN', 'SUPER_ADMIN'), asyncHandler(createVenueController));
 venueRouter.post(
   '/upload-image',

@@ -20,6 +20,9 @@ const VenueBookingsAdminPage = lazy(() => import('@/pages/admin/VenueBookingsAdm
 const OrganizerPage = lazy(() => import('@/pages/OrganizerPage'));
 const OrganizerEventsPage = lazy(() => import('@/pages/organizer/OrganizerEventsPage'));
 const VenueBookingPage = lazy(() => import('@/pages/organizer/VenueBookingPage'));
+const CreateEventPage = lazy(() => import('@/pages/organizer/CreateEventPage'));
+const EditEventPage = lazy(() => import('@/pages/organizer/EditEventPage'));
+const EventDetailPage = lazy(() => import('@/pages/organizer/EventDetailPage'));
 const AttendeePage = lazy(() => import('@/pages/AttendeePage'));
 
 function AppRoutes() {
@@ -55,6 +58,9 @@ function AppRoutes() {
           <Route element={<OrganizerLayout />}>
             <Route path="organizer" element={<OrganizerPage />} />
             <Route path="organizer/events" element={<OrganizerEventsPage />} />
+            <Route path="organizer/events/new" element={<CreateEventPage />} />
+            <Route path="organizer/events/:id" element={<EventDetailPage />} />
+            <Route path="organizer/events/:id/edit" element={<EditEventPage />} />
             <Route path="organizer/venue-bookings" element={<VenueBookingPage />} />
           </Route>
         </Route>
@@ -62,6 +68,7 @@ function AppRoutes() {
         <Route element={<ProtectedRoute allowedRoles={['ATTENDEE', 'ORGANIZER', 'ADMIN', 'SUPER_ADMIN']} />}>
           <Route element={<UserLayout />}>
             <Route path="attendee" element={<AttendeePage />} />
+            <Route path="attendee/events/:id" element={<EventDetailPage />} />
           </Route>
         </Route>
 

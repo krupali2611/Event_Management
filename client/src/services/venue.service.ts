@@ -11,6 +11,7 @@ export const venueService = {
         ...(filters.location ? { location: filters.location } : {}),
         ...(filters.minCapacity ? { minCapacity: Number(filters.minCapacity) } : {}),
         ...(filters.status ? { isActive: filters.status === 'ACTIVE' } : {}),
+        ...(filters.includeInactive ? { includeInactive: true } : {}),
       },
     });
 
