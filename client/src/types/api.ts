@@ -8,3 +8,20 @@ export interface HealthCheckResponse {
   success: boolean;
   message: string;
 }
+
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'ORGANIZER' | 'ATTENDEE';
+
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: AuthUser;
+}
