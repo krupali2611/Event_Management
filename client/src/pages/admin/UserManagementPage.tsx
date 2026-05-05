@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 import UserFilters from '@/components/admin/UserFilters';
 import UserRoleModal from '@/components/admin/UserRoleModal';
 import UserTable from '@/components/admin/UserTable';
-import Modal from '@/components/ui/Modal';
-import Button from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import { userService } from '@/services/user.service';
 import type { UserRole } from '@/types/api';
@@ -15,6 +13,7 @@ const defaultFilters: UserListFilters = {
   limit: 10,
   search: '',
   role: '',
+  status: '',
 };
 
 const emptyData: UserListData = {
@@ -39,9 +38,9 @@ function UserManagementPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserListItem | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<UserListItem | null>(null);
   const [isRoleSubmitting, setIsRoleSubmitting] = useState(false);
-  const [isDeleteSubmitting, setIsDeleteSubmitting] = useState(false);
+  const [togglingUserId, setTogglingUserId] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -56,7 +55,16 @@ function UserManagementPage() {
       ...filters,
       search: debouncedSearch,
     });
-  }, [debouncedSearch, filters.page, filters.limit, filters.role]);
+  }, [debouncedSearch, filters.page, filters.limit, filters.role, filters.status]);
+
+  useEffect(() => {
+    if (!toast) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => setToast(null), 2400);
+    return () => window.clearTimeout(timeoutId);
+  }, [toast]);
 
   const loadUsers = async (nextFilters: UserListFilters): Promise<void> => {
     try {
@@ -84,6 +92,14 @@ function UserManagementPage() {
       ...current,
       page: 1,
       role: value,
+    }));
+  };
+
+  const handleStatusChange = (value: '' | 'ACTIVE' | 'INACTIVE'): void => {
+    setFilters((current) => ({
+      ...current,
+      page: 1,
+      status: value,
     }));
   };
 
@@ -122,23 +138,58 @@ function UserManagementPage() {
     }
   };
 
-  const handleDeleteConfirm = async (): Promise<void> => {
-    if (!deleteTarget) {
+  const handleToggleStatus = async (user: UserListItem): Promise<void> => {
+    if (!currentUser || currentUser.id === user.id) {
+      setError('You cannot deactivate your own account from this screen.');
       return;
     }
 
+    const nextStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    const previousUsers = data.users;
+
+    setError(null);
+    setTogglingUserId(user.id);
+    setData((current) => ({
+      ...current,
+      users: current.users.map((item) =>
+        item.id === user.id
+          ? {
+              ...item,
+              isActive: nextStatus === 'ACTIVE',
+              status: nextStatus,
+            }
+          : item,
+      ),
+    }));
+
     try {
-      setIsDeleteSubmitting(true);
-      await userService.deleteUser(deleteTarget.id);
-      setDeleteTarget(null);
-      await loadUsers({
-        ...filters,
-        search: debouncedSearch,
-      });
+      const response = await userService.updateUserStatus(user.id);
+      const updatedUser = response.data;
+
+      if (updatedUser) {
+        setData((current) => ({
+          ...current,
+          users: current.users.map((item) =>
+            item.id === user.id
+              ? {
+                  ...item,
+                  isActive: updatedUser.isActive,
+                  status: updatedUser.status,
+                }
+              : item,
+          ),
+        }));
+      }
+
+      setToast(nextStatus === 'ACTIVE' ? 'User Activated' : 'User Deactivated');
     } catch (requestError) {
+      setData((current) => ({
+        ...current,
+        users: previousUsers,
+      }));
       setError(getApiErrorMessage(requestError));
     } finally {
-      setIsDeleteSubmitting(false);
+      setTogglingUserId(null);
     }
   };
 
@@ -166,11 +217,13 @@ function UserManagementPage() {
         availableRoles={getVisibleFilterRoles(currentUser.role)}
         onSearchChange={handleSearchChange}
         onRoleChange={handleRoleChange}
+        onStatusChange={handleStatusChange}
       />
 
       {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
 
       <UserTable
+        currentUserId={currentUser.id}
         users={data.users}
         currentUserRole={currentUser.role}
         pagination={data.pagination}
@@ -178,7 +231,8 @@ function UserManagementPage() {
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
         onChangeRole={(user) => setSelectedUser(user)}
-        onDelete={(user) => setDeleteTarget(user)}
+        onToggleStatus={(user) => void handleToggleStatus(user)}
+        togglingUserId={togglingUserId}
       />
 
       <UserRoleModal
@@ -189,27 +243,10 @@ function UserManagementPage() {
         onConfirm={(role) => void handleRoleConfirm(role)}
       />
 
-      {deleteTarget ? (
-        <Modal
-          eyebrow="Delete User"
-          title={`Delete ${deleteTarget.name}?`}
-          description="This will call the existing backend delete endpoint. Permission checks remain enforced on the server."
-          onClose={() => setDeleteTarget(null)}
-          footer={
-            <>
-              <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
-                Cancel
-              </Button>
-              <Button variant="danger" disabled={isDeleteSubmitting} onClick={() => void handleDeleteConfirm()}>
-                {isDeleteSubmitting ? 'Deleting...' : 'Delete'}
-              </Button>
-            </>
-          }
-        >
-          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-            This action is intended for `SUPER_ADMIN` only and cannot be undone from this screen.
-          </div>
-        </Modal>
+      {toast ? (
+        <div className="pointer-events-none fixed bottom-6 right-6 z-50 rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm font-medium text-emerald-700 shadow-2xl shadow-emerald-100">
+          {toast}
+        </div>
       ) : null}
     </section>
   );

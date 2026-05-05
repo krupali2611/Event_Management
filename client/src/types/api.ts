@@ -17,6 +17,7 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   isActive: boolean;
+  status: 'ACTIVE' | 'INACTIVE';
   createdAt: string;
   updatedAt: string;
 }

@@ -5,6 +5,7 @@ import {
   getVenueAvailabilityController,
   getVenueController,
   getVenuesController,
+  toggleVenueStatusController,
   uploadVenueImageController,
   updateVenueController,
 } from '../controllers/venue.controller';
@@ -27,6 +28,7 @@ venueRouter.post(
 venueRouter.get('/:id', requireRole('ADMIN', 'SUPER_ADMIN', 'ORGANIZER'), asyncHandler(getVenueController));
 venueRouter.get('/:id/availability', requireRole('ADMIN', 'SUPER_ADMIN', 'ORGANIZER'), asyncHandler(getVenueAvailabilityController));
 venueRouter.put('/:id', requireRole('ADMIN', 'SUPER_ADMIN'), asyncHandler(updateVenueController));
+venueRouter.patch('/:id/status', requireRole('ADMIN', 'SUPER_ADMIN'), asyncHandler(toggleVenueStatusController));
 venueRouter.delete('/:id', requireRole('ADMIN', 'SUPER_ADMIN'), asyncHandler(deactivateVenueController));
 
 export default venueRouter;

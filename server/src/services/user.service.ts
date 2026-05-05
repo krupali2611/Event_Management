@@ -21,6 +21,7 @@ function toAuthUserDto(user: ManagedUserRecord): AuthUserDto {
     email: user.email,
     role: user.role,
     isActive: user.isActive,
+    status: user.isActive ? 'ACTIVE' : 'INACTIVE',
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
@@ -33,6 +34,7 @@ function toUserListItemDto(user: Pick<ManagedUserRecord, 'id' | 'name' | 'email'
     email: user.email,
     role: user.role,
     isActive: user.isActive,
+    status: user.isActive ? 'ACTIVE' : 'INACTIVE',
   };
 }
 
@@ -111,7 +113,11 @@ export async function getUsersByActor(
   const whereClause: Prisma.UserWhereInput = {
     ...baseWhere,
     ...(query.role ? { role: query.role } : {}),
-    ...(query.isActive === undefined ? {} : { isActive: query.isActive }),
+    ...((query.status ?? (query.isActive === undefined ? undefined : query.isActive ? 'ACTIVE' : 'INACTIVE'))
+      ? {
+          isActive: (query.status ?? (query.isActive ? 'ACTIVE' : 'INACTIVE')) === 'ACTIVE',
+        }
+      : {}),
     ...(query.search
       ? {
           OR: [
@@ -207,25 +213,30 @@ export async function updateUserStatusByActor(
   actorUserId: string,
   actorRole: USER_ROLE,
   targetUserId: string,
-  isActive: boolean,
+  isActive?: boolean,
 ): Promise<AuthUserDto> {
-  if (actorRole !== 'SUPER_ADMIN') {
-    throw new AppError('Only SUPER_ADMIN can update user status', 403);
-  }
-
   const targetUser = await getManagedUserOrThrow(targetUserId);
+
+  if (actorRole === 'ADMIN') {
+    assertUserVisible(actorUserId, actorRole, targetUser);
+  }
 
   if (targetUser.role === 'SUPER_ADMIN') {
     throw new AppError('SUPER_ADMIN users cannot have their status changed', 403);
   }
 
   if (actorUserId === targetUserId) {
-    throw new AppError('SUPER_ADMIN cannot change their own status', 403);
+    throw new AppError('You cannot change your own status', 403);
   }
 
+  if (actorRole === 'ADMIN' && targetUser.role === 'ADMIN') {
+    throw new AppError('ADMIN users cannot change another ADMIN status', 403);
+  }
+
+  const nextIsActive = isActive ?? !targetUser.isActive;
   const updatedUser = await prisma.user.update({
     where: { id: targetUserId },
-    data: { isActive },
+    data: { isActive: nextIsActive },
   });
 
   return toAuthUserDto(updatedUser);

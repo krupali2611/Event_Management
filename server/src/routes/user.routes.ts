@@ -16,7 +16,7 @@ userRouter.use(authenticate);
 userRouter.get('/', requireRole('ADMIN', 'SUPER_ADMIN'), asyncHandler(getUsersController));
 userRouter.get('/:id', requireRole('ADMIN', 'SUPER_ADMIN'), asyncHandler(getUserDetailsController));
 userRouter.patch('/:id/role', requireRole('ADMIN', 'SUPER_ADMIN'), asyncHandler(updateUserRoleController));
-userRouter.patch('/:id/status', requireRole('SUPER_ADMIN'), asyncHandler(updateUserStatusController));
+userRouter.patch('/:id/status', requireRole('ADMIN', 'SUPER_ADMIN'), asyncHandler(updateUserStatusController));
 userRouter.delete('/:id', requireRole('SUPER_ADMIN'), asyncHandler(deactivateUserController));
 
 export default userRouter;

@@ -7,6 +7,7 @@ import type { UserRole } from '@/types/api';
 import type { UserListItem, UserListPagination } from '@/types/user.types';
 
 interface UserTableProps {
+  currentUserId: string;
   users: UserListItem[];
   currentUserRole: UserRole;
   pagination: UserListPagination;
@@ -14,14 +15,17 @@ interface UserTableProps {
   onPageChange: (page: number) => void;
   onPageSizeChange: (limit: number) => void;
   onChangeRole: (user: UserListItem) => void;
-  onDelete: (user: UserListItem) => void;
+  onToggleStatus: (user: UserListItem) => void;
+  togglingUserId: string | null;
 }
 
 interface UserRowProps {
+  currentUserId: string;
   currentUserRole: UserRole;
   user: UserListItem;
   onChangeRole: (user: UserListItem) => void;
-  onDelete: (user: UserListItem) => void;
+  onToggleStatus: (user: UserListItem) => void;
+  statusUpdating: boolean;
 }
 
 function getVisiblePages(page: number, totalPages: number): number[] {
@@ -36,13 +40,13 @@ function getVisiblePages(page: number, totalPages: number): number[] {
   return pages;
 }
 
-const UserRow = memo(function UserRow({ currentUserRole, user, onChangeRole, onDelete }: UserRowProps) {
+const UserRow = memo(function UserRow({ currentUserId, currentUserRole, user, onChangeRole, onToggleStatus, statusUpdating }: UserRowProps) {
   return (
     <tr className="border-b border-slate-200 even:bg-slate-50/70 hover:bg-slate-50">
       <td className="px-4 py-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-slate-900">{user.name}</p>
-          <p className="mt-0.5 text-xs uppercase tracking-[0.18em] text-slate-500">{user.isActive ? 'Active' : 'Inactive'}</p>
+          <p className="mt-0.5 text-xs uppercase tracking-[0.18em] text-slate-500">{user.status}</p>
         </div>
       </td>
       <td className="px-4 py-3 text-sm text-slate-600">{user.email}</td>
@@ -51,10 +55,12 @@ const UserRow = memo(function UserRow({ currentUserRole, user, onChangeRole, onD
       </td>
       <td className="px-4 py-3">
         <UserActions
+          currentUserId={currentUserId}
           currentUserRole={currentUserRole}
           user={user}
           onChangeRole={onChangeRole}
-          onDelete={onDelete}
+          onToggleStatus={onToggleStatus}
+          statusUpdating={statusUpdating}
         />
       </td>
     </tr>
@@ -62,6 +68,7 @@ const UserRow = memo(function UserRow({ currentUserRole, user, onChangeRole, onD
 });
 
 function UserTable({
+  currentUserId,
   users,
   currentUserRole,
   pagination,
@@ -69,7 +76,8 @@ function UserTable({
   onPageChange,
   onPageSizeChange,
   onChangeRole,
-  onDelete,
+  onToggleStatus,
+  togglingUserId,
 }: UserTableProps) {
   const visiblePages = getVisiblePages(pagination.page, pagination.totalPages);
 
@@ -103,7 +111,6 @@ function UserTable({
                       <div className="flex gap-2">
                         <div className="h-9 w-9 animate-pulse rounded-lg bg-slate-200" />
                         <div className="h-9 w-9 animate-pulse rounded-lg bg-slate-200" />
-                        <div className="h-9 w-9 animate-pulse rounded-lg bg-slate-200" />
                       </div>
                     </td>
                   </tr>
@@ -111,10 +118,12 @@ function UserTable({
               : users.map((user) => (
                   <UserRow
                     key={user.id}
+                    currentUserId={currentUserId}
                     currentUserRole={currentUserRole}
                     user={user}
                     onChangeRole={onChangeRole}
-                    onDelete={onDelete}
+                    onToggleStatus={onToggleStatus}
+                    statusUpdating={togglingUserId === user.id}
                   />
                 ))}
           </tbody>
@@ -124,7 +133,7 @@ function UserTable({
       {!loading && users.length === 0 ? (
         <div className="px-4 py-10 text-center">
           <p className="text-sm font-medium text-slate-900">No users found</p>
-          <p className="mt-1 text-sm text-slate-500">Try a different search or role filter.</p>
+          <p className="mt-1 text-sm text-slate-500">Try a different search, role filter, or status filter.</p>
         </div>
       ) : null}
 

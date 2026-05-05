@@ -1,160 +1,154 @@
-import { Building2, Edit3, ImageIcon, MapPin, Trash2, Users } from 'lucide-react';
+import { Building2, Eye, LoaderCircle, Pencil, UserCheck, UserX, Users } from 'lucide-react';
+import type { ReactNode, RefObject } from 'react';
 import { Link } from 'react-router-dom';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
-import Table from '@/components/ui/Table';
-import type { Venue, VenueListData } from '@/types/venue.types';
+import Card from '@/components/ui/Card';
+import type { Venue } from '@/types/venue.types';
 
 interface VenueTableProps {
   venues: Venue[];
-  pagination: VenueListData['pagination'];
   loading: boolean;
-  onPageChange: (page: number) => void;
-  onPageSizeChange: (limit: number) => void;
-  onDeactivate: (venue: Venue) => void;
+  loadingMore: boolean;
+  hasMore: boolean;
+  onToggleStatus: (venue: Venue) => void;
+  togglingVenueId: string | null;
+  loadMoreRef: RefObject<HTMLDivElement | null>;
 }
 
-function VenueTable({ venues, pagination, loading, onPageChange, onPageSizeChange, onDeactivate }: VenueTableProps) {
-  const pageNumbers = Array.from({ length: pagination.totalPages }, (_, index) => index + 1);
-
+function SkeletonCard() {
   return (
-    <Table
-      footer={
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm">
-            Showing page {pagination.page} of {pagination.totalPages} with {pagination.total} total venues
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={pagination.limit}
-              onChange={(event) => onPageSizeChange(Number(event.target.value))}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
-            >
-              {[5, 10, 20, 50].map((size) => (
-                <option key={size} value={size}>
-                  {size} / page
-                </option>
-              ))}
-            </select>
-            <div className="flex items-center gap-2">
-              {pageNumbers.map((page) => (
-                <button
-                  key={page}
-                  type="button"
-                  onClick={() => onPageChange(page)}
-                  className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
-                    page === pagination.page ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-            </div>
-          </div>
+    <Card className="overflow-hidden p-0">
+      <div className="h-48 animate-pulse bg-slate-200" />
+      <div className="space-y-4 p-5">
+        <div className="space-y-2">
+          <div className="h-5 w-2/3 animate-pulse rounded bg-slate-200" />
+          <div className="h-4 w-full animate-pulse rounded bg-slate-100" />
         </div>
-      }
-    >
-      <table className="min-w-full divide-y divide-slate-200 text-left">
-        <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-          <tr>
-            <th className="px-6 py-4">Venue</th>
-            <th className="px-6 py-4">Location</th>
-            <th className="px-6 py-4">Capacity</th>
-            <th className="px-6 py-4">Facilities</th>
-            <th className="px-6 py-4">Status</th>
-            <th className="px-6 py-4 text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100 bg-white">
-          {loading ? (
-            <tr>
-              <td colSpan={6} className="px-6 py-12 text-center text-sm text-slate-500">
-                Loading venues...
-              </td>
-            </tr>
-          ) : venues.length === 0 ? (
-            <tr>
-              <td colSpan={6} className="px-6 py-12 text-center text-sm text-slate-500">
-                No venues match the current filters.
-              </td>
-            </tr>
-          ) : (
-            venues.map((venue) => (
-              <tr key={venue.id} className="align-top">
-                <td className="px-6 py-5">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-100 text-slate-400">
-                      {venue.image ? (
-                        <img src={venue.image} alt={venue.name} className="h-full w-full object-cover" />
-                      ) : (
-                        <Building2 className="h-6 w-6" />
-                      )}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 text-base font-semibold text-slate-900">
-                        {venue.name}
-                        {venue.image ? <ImageIcon className="h-4 w-4 text-slate-400" /> : null}
-                      </div>
-                      <p className="mt-1 max-w-sm text-sm text-slate-500">{venue.description ?? 'No description provided yet.'}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-5">
-                  <div className="flex items-start gap-2 text-sm text-slate-700">
-                    <MapPin className="mt-0.5 h-4 w-4 text-brand-700" />
-                    <div>
-                      <p className="font-medium text-slate-900">{venue.location}</p>
-                      <p className="mt-1 text-slate-500">{venue.address ?? 'Address not added'}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-5">
-                  <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-700">
-                    <Users className="h-4 w-4 text-brand-700" />
-                    {venue.capacity.toLocaleString()} guests
-                  </div>
-                </td>
-                <td className="px-6 py-5">
-                  <div className="flex max-w-xs flex-wrap gap-2">
-                    {venue.amenities.length > 0 ? (
-                      venue.amenities.slice(0, 3).map((amenity) => (
-                        <span key={amenity} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                          {amenity}
-                        </span>
-                      ))
+        <div className="h-4 w-1/3 animate-pulse rounded bg-slate-100" />
+        <div className="flex gap-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="h-10 w-10 animate-pulse rounded-2xl bg-slate-100" />
+          ))}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function IconAction({
+  children,
+  tooltip,
+}: {
+  children: ReactNode;
+  tooltip: string;
+}) {
+  return (
+    <div className="group relative">
+      {children}
+      <div className="pointer-events-none absolute -top-11 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-xl bg-slate-950 px-3 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-all delay-150 duration-200 group-hover:-translate-y-1 group-hover:opacity-100">
+        {tooltip}
+      </div>
+    </div>
+  );
+}
+
+function VenueTable({ venues, loading, loadingMore, hasMore, onToggleStatus, togglingVenueId, loadMoreRef }: VenueTableProps) {
+  return (
+    <div className="space-y-5">
+      {loading ? (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, index) => (
+            <SkeletonCard key={index} />
+          ))}
+        </div>
+      ) : venues.length === 0 ? (
+        <Card className="px-6 py-12 text-center text-sm text-slate-500">No venues match the current filters.</Card>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {venues.map((venue) => {
+              const isToggling = togglingVenueId === venue.id;
+
+              return (
+                <Card key={venue.id} className="overflow-hidden p-0 transition duration-200 hover:-translate-y-1 hover:shadow-xl">
+                  <div className="relative h-48 overflow-hidden bg-slate-100">
+                    {venue.image ? (
+                      <img src={venue.image} alt={venue.name} loading="lazy" className="h-full w-full object-cover" />
                     ) : (
-                      <span className="text-sm text-slate-500">No facilities added</span>
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300 text-slate-500">
+                        <Building2 className="h-14 w-14" />
+                      </div>
                     )}
-                    {venue.amenities.length > 3 ? (
-                      <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
-                        +{venue.amenities.length - 3} more
-                      </span>
-                    ) : null}
+                    <div className="absolute left-4 top-4">
+                      <Badge color={venue.isActive ? 'green' : 'amber'}>{venue.isActive ? 'ACTIVE' : 'INACTIVE'}</Badge>
+                    </div>
                   </div>
-                </td>
-                <td className="px-6 py-5">
-                  <Badge color={venue.isActive ? 'green' : 'amber'}>{venue.isActive ? 'Active' : 'Inactive'}</Badge>
-                </td>
-                <td className="px-6 py-5">
-                  <div className="flex justify-end gap-2">
-                    <Link to={`/admin/venues/${venue.id}/edit`}>
-                      <Button variant="secondary" size="sm" icon={<Edit3 className="h-4 w-4" />}>
-                        Edit
-                      </Button>
-                    </Link>
-                    {venue.isActive ? (
-                      <Button variant="danger" size="sm" icon={<Trash2 className="h-4 w-4" />} onClick={() => onDeactivate(venue)}>
-                        Deactivate
-                      </Button>
-                    ) : null}
+
+                  <div className="space-y-6 p-5">
+                    <div className="space-y-3">
+                      <div>
+                        <h3 className="text-lg font-semibold text-slate-950">{venue.name}</h3>
+                        <p className="mt-2 line-clamp-2 text-sm text-slate-600">{venue.address ? `${venue.location}, ${venue.address}` : venue.location}</p>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Users className="h-4 w-4 text-brand-500" />
+                        <span>{venue.capacity.toLocaleString()} People</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3">
+                      <IconAction tooltip="View Venue">
+                        <Link to={`/admin/venues/${venue.id}`}>
+                          <Button size="icon" aria-label="View Venue" icon={<Eye className="h-4 w-4" />} />
+                        </Link>
+                      </IconAction>
+
+                      <IconAction tooltip="Edit Venue">
+                        <Link to={`/admin/venues/${venue.id}/edit`}>
+                          <Button variant="secondary" size="icon" aria-label="Edit Venue" icon={<Pencil className="h-4 w-4" />} />
+                        </Link>
+                      </IconAction>
+
+                      <IconAction tooltip={venue.isActive ? 'Deactivate Venue' : 'Activate Venue'}>
+                        <Button
+                          variant={venue.isActive ? 'danger' : 'success'}
+                          size="icon"
+                          aria-label={venue.isActive ? 'Deactivate Venue' : 'Activate Venue'}
+                          disabled={isToggling}
+                          icon={
+                            isToggling ? (
+                              <LoaderCircle className="h-4 w-4 animate-spin" />
+                            ) : venue.isActive ? (
+                              <UserX className="h-4 w-4" />
+                            ) : (
+                              <UserCheck className="h-4 w-4" />
+                            )
+                          }
+                          onClick={() => onToggleStatus(venue)}
+                        />
+                      </IconAction>
+                    </div>
                   </div>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </Table>
+                </Card>
+              );
+            })}
+          </div>
+
+          {loadingMore ? (
+            <div className="flex items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white/90 px-4 py-4 text-sm text-slate-600 shadow-panel">
+              <LoaderCircle className="h-4 w-4 animate-spin text-brand-600" />
+              Loading more venues...
+            </div>
+          ) : !hasMore ? (
+            <div className="text-center text-sm text-slate-500">No more venues</div>
+          ) : null}
+        </>
+      )}
+
+      <div ref={loadMoreRef} className="h-4" aria-hidden="true" />
+    </div>
   );
 }
 

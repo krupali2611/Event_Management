@@ -9,16 +9,21 @@ interface UserFiltersProps {
   availableRoles: UserRole[];
   onSearchChange: (value: string) => void;
   onRoleChange: (value: '' | UserRole) => void;
+  onStatusChange: (value: '' | 'ACTIVE' | 'INACTIVE') => void;
   dark?: boolean;
 }
 
-function UserFilters({ filters, availableRoles, onSearchChange, onRoleChange, dark = false }: UserFiltersProps) {
+function UserFilters({ filters, availableRoles, onSearchChange, onRoleChange, onStatusChange, dark = false }: UserFiltersProps) {
   const handleRoleChange = (event: ChangeEvent<HTMLSelectElement>): void => {
     onRoleChange(event.target.value as '' | UserRole);
   };
 
+  const handleStatusChange = (event: ChangeEvent<HTMLSelectElement>): void => {
+    onStatusChange(event.target.value as '' | 'ACTIVE' | 'INACTIVE');
+  };
+
   return (
-    <div className={`grid gap-4 rounded-3xl p-5 shadow-panel md:grid-cols-[minmax(0,1fr)_220px] ${
+    <div className={`grid gap-4 rounded-3xl p-5 shadow-panel lg:grid-cols-[minmax(0,1.4fr)_220px_220px] ${
       dark ? 'border border-slate-800 bg-slate-900/95' : 'border border-slate-200 bg-white/90'
     }`}>
       <label className="block">
@@ -29,10 +34,27 @@ function UserFilters({ filters, availableRoles, onSearchChange, onRoleChange, da
             type="text"
             value={filters.search}
             onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Search by name or email"
+            placeholder="Search by name, email, or status"
             className={`pl-11 ${dark ? 'border-slate-800 bg-slate-950 text-slate-100 focus:bg-slate-950' : ''}`}
           />
         </div>
+      </label>
+
+      <label className="block">
+        <span className={`mb-2 block text-sm font-semibold ${dark ? 'text-slate-200' : 'text-slate-700'}`}>Filter by status</span>
+        <select
+          value={filters.status ?? ''}
+          onChange={handleStatusChange}
+          className={`w-full rounded-2xl px-4 py-3 outline-none transition ${
+            dark
+              ? 'border border-slate-800 bg-slate-950 text-slate-100 focus:border-blue-500'
+              : 'border border-slate-200 bg-slate-50 text-slate-900 focus:border-brand-500 focus:bg-white'
+          }`}
+        >
+          <option value="">All Users</option>
+          <option value="ACTIVE">Active Users</option>
+          <option value="INACTIVE">Inactive Users</option>
+        </select>
       </label>
 
       <label className="block">

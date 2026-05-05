@@ -20,6 +20,7 @@ export const venueIdParamSchema = z.object({
 export const venueListQuerySchema = z.object({
   page: positiveInteger.default(1),
   limit: positiveInteger.max(50).default(10),
+  offset: z.coerce.number().int().min(0).optional(),
   search: z
     .string()
     .trim()

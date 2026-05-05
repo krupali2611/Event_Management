@@ -14,6 +14,7 @@ export interface UserListItem {
   email: string;
   role: UserRole;
   isActive: boolean;
+  status: 'ACTIVE' | 'INACTIVE';
 }
 
 export interface UserListPagination {

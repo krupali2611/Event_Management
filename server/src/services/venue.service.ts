@@ -131,7 +131,7 @@ export async function getVenues(query: VenueListQuery): Promise<PaginatedVenuesD
       : {}),
   };
 
-  const skip = (query.page - 1) * query.limit;
+  const skip = query.offset ?? (query.page - 1) * query.limit;
   const [items, totalItems] = await Promise.all([
     venueDelegate.findMany({
       where: whereClause,
@@ -144,11 +144,13 @@ export async function getVenues(query: VenueListQuery): Promise<PaginatedVenuesD
 
   return {
     venues: items.map(toVenueDto),
+    hasMore: skip + items.length < totalItems,
     pagination: {
       total: totalItems,
-      page: query.page,
+      page: query.offset !== undefined ? Math.floor(query.offset / query.limit) + 1 : query.page,
       limit: query.limit,
       totalPages: Math.max(1, Math.ceil(totalItems / query.limit)),
+      offset: skip,
     },
   };
 }
@@ -203,6 +205,17 @@ export async function deactivateVenue(id: string): Promise<VenueDto> {
   const venue = await venueDelegate.update({
     where: { id },
     data: { isActive: false },
+  });
+
+  return toVenueDto(venue);
+}
+
+export async function toggleVenueStatus(id: string): Promise<VenueDto> {
+  const venueDelegate = getVenueDelegate();
+  const existingVenue = await ensureVenueExists(id);
+  const venue = await venueDelegate.update({
+    where: { id },
+    data: { isActive: !existingVenue.isActive },
   });
 
   return toVenueDto(venue);

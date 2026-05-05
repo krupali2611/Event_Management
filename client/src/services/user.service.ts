@@ -9,7 +9,7 @@ export const userService = {
         limit: filters.limit,
         ...(filters.search ? { search: filters.search } : {}),
         ...(filters.role ? { role: filters.role } : {}),
-        ...(filters.status ? { isActive: filters.status === 'ACTIVE' } : {}),
+        ...(filters.status ? { status: filters.status } : {}),
       },
     });
 
@@ -31,8 +31,8 @@ export const userService = {
     return response.data;
   },
 
-  async updateUserStatus(userId: string, isActive: boolean): Promise<UserResponse> {
-    const response = await httpClient.patch<UserResponse>(`/users/${userId}/status`, { isActive });
+  async updateUserStatus(userId: string): Promise<UserResponse> {
+    const response = await httpClient.patch<UserResponse>(`/users/${userId}/status`);
     return response.data;
   },
 };

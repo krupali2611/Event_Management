@@ -5,6 +5,7 @@ import {
   getVenueAvailability,
   getVenueById,
   getVenues,
+  toggleVenueStatus,
   updateVenue,
 } from '../services/venue.service';
 import type { ApiResponse } from '../types/api';
@@ -66,6 +67,15 @@ export async function deactivateVenueController(
   const { id } = venueIdParamSchema.parse(request.params);
   const venue = await deactivateVenue(id);
   sendSuccess(response, 200, 'Venue marked inactive successfully', venue);
+}
+
+export async function toggleVenueStatusController(
+  request: AuthenticatedRequest,
+  response: Response<ApiResponse<VenueDto>>,
+): Promise<void> {
+  const { id } = venueIdParamSchema.parse(request.params);
+  const venue = await toggleVenueStatus(id);
+  sendSuccess(response, 200, `Venue ${venue.isActive ? 'activated' : 'deactivated'} successfully`, venue);
 }
 
 export async function getVenueAvailabilityController(

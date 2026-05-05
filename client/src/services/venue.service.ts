@@ -7,6 +7,7 @@ export const venueService = {
       params: {
         page: filters.page,
         limit: filters.limit,
+        ...(filters.offset !== undefined ? { offset: filters.offset } : {}),
         ...(filters.search ? { search: filters.search } : {}),
         ...(filters.location ? { location: filters.location } : {}),
         ...(filters.minCapacity ? { minCapacity: Number(filters.minCapacity) } : {}),
@@ -43,6 +44,11 @@ export const venueService = {
 
   async updateVenue(venueId: string, payload: VenuePayload): Promise<VenueResponse> {
     const response = await httpClient.put<VenueResponse>(`/venues/${venueId}`, payload);
+    return response.data;
+  },
+
+  async toggleVenueStatus(venueId: string): Promise<VenueResponse> {
+    const response = await httpClient.patch<VenueResponse>(`/venues/${venueId}/status`);
     return response.data;
   },
 

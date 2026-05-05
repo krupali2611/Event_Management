@@ -5,6 +5,7 @@ export interface UserListQuery {
   limit: number;
   search?: string;
   role?: USER_ROLE;
+  status?: 'ACTIVE' | 'INACTIVE';
   isActive?: boolean;
 }
 
@@ -14,6 +15,7 @@ export interface UserListItemDto {
   email: string;
   role: USER_ROLE;
   isActive: boolean;
+  status: 'ACTIVE' | 'INACTIVE';
 }
 
 export interface PaginatedUsersData {

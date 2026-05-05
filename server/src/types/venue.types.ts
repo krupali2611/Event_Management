@@ -20,16 +20,19 @@ export interface PaginationDto {
   page: number;
   limit: number;
   totalPages: number;
+  offset?: number;
 }
 
 export interface PaginatedVenuesData {
   venues: VenueListItemDto[];
+  hasMore: boolean;
   pagination: PaginationDto;
 }
 
 export interface VenueListQuery {
   page: number;
   limit: number;
+  offset?: number;
   search?: string;
   location?: string;
   minCapacity?: number;

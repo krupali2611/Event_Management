@@ -18,6 +18,7 @@ export interface Venue {
 export interface VenueListFilters {
   page: number;
   limit: number;
+  offset?: number;
   search: string;
   location: string;
   minCapacity: string;
@@ -27,11 +28,13 @@ export interface VenueListFilters {
 
 export interface VenueListData {
   venues: Venue[];
+  hasMore: boolean;
   pagination: {
     total: number;
     page: number;
     limit: number;
     totalPages: number;
+    offset?: number;
   };
 }
 

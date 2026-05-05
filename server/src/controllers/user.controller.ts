@@ -49,6 +49,6 @@ export async function updateUserStatusController(
 ): Promise<void> {
   const { id } = userIdParamSchema.parse(request.params);
   const payload = updateUserStatusBodySchema.parse(request.body);
-  const user = await updateUserStatusByActor(request.user!.id, request.user!.role, id, payload.isActive);
-  sendSuccess(response, 200, `User ${payload.isActive ? 'activated' : 'marked inactive'} successfully`, user);
+  const user = await updateUserStatusByActor(request.user!.id, request.user!.role, id, payload?.isActive);
+  sendSuccess(response, 200, `User ${user.status === 'ACTIVE' ? 'activated' : 'deactivated'} successfully`, user);
 }

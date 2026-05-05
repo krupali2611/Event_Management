@@ -31,6 +31,7 @@ export interface AuthUserDto {
   email: string;
   role: USER_ROLE;
   isActive: boolean;
+  status: 'ACTIVE' | 'INACTIVE';
   createdAt: Date;
   updatedAt: Date;
 }

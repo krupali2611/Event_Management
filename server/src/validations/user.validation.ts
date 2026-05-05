@@ -13,6 +13,7 @@ export const userListQuerySchema = z.object({
     .optional()
     .transform((value) => (value ? value : undefined)),
   role: z.nativeEnum(USER_ROLE).optional(),
+  status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
   isActive: z
     .enum(['true', 'false'])
     .optional()
@@ -33,6 +34,8 @@ export const updateUserRoleBodySchema = z.object({
   role: z.nativeEnum(USER_ROLE),
 });
 
-export const updateUserStatusBodySchema = z.object({
-  isActive: z.boolean(),
-});
+export const updateUserStatusBodySchema = z
+  .object({
+    isActive: z.boolean().optional(),
+  })
+  .optional();

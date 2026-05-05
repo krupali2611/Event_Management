@@ -21,6 +21,7 @@ function toAuthUserDto(user: AuthUserRecord): AuthUserDto {
     email: user.email,
     role: user.role,
     isActive: user.isActive,
+    status: user.isActive ? 'ACTIVE' : 'INACTIVE',
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };

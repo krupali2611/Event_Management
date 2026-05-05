@@ -13,6 +13,7 @@ const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
 const AdminDashboardPage = lazy(() => import('@/pages/admin/AdminDashboardPage'));
 const VenueManagementPage = lazy(() => import('@/pages/admin/VenueManagementPage'));
 const AddVenuePage = lazy(() => import('@/pages/admin/AddVenuePage'));
+const VenueDetailsPage = lazy(() => import('@/pages/admin/VenueDetailsPage'));
 const EditVenuePage = lazy(() => import('@/pages/admin/EditVenuePage'));
 const UserManagementPage = lazy(() => import('@/pages/admin/UserManagementPage'));
 const UserDetailsPage = lazy(() => import('@/pages/admin/UserDetailsPage'));
@@ -49,6 +50,7 @@ function AppRoutes() {
             <Route path="admin/users/:id" element={<UserDetailsPage />} />
             <Route path="admin/venues" element={<VenueManagementPage />} />
             <Route path="admin/venues/new" element={<AddVenuePage />} />
+            <Route path="admin/venues/:id" element={<VenueDetailsPage />} />
             <Route path="admin/venues/:id/edit" element={<EditVenuePage />} />
             <Route path="admin/venue-bookings" element={<VenueBookingsAdminPage />} />
           </Route>

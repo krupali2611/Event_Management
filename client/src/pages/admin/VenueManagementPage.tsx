@@ -1,17 +1,17 @@
 import { Plus } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import VenueFilters from '@/components/admin/VenueFilters';
 import VenueTable from '@/components/admin/VenueTable';
 import Button from '@/components/ui/Button';
-import Modal from '@/components/ui/Modal';
 import { venueService } from '@/services/venue.service';
 import type { Venue, VenueListData, VenueListFilters } from '@/types/venue.types';
 import { getApiErrorMessage } from '@/utils/getApiErrorMessage';
 
 const defaultFilters: VenueListFilters = {
   page: 1,
-  limit: 10,
+  limit: 8,
+  offset: 0,
   search: '',
   location: '',
   minCapacity: '',
@@ -21,11 +21,13 @@ const defaultFilters: VenueListFilters = {
 
 const emptyData: VenueListData = {
   venues: [],
+  hasMore: false,
   pagination: {
     total: 0,
     page: 1,
-    limit: 10,
+    limit: 8,
     totalPages: 1,
+    offset: 0,
   },
 };
 
@@ -34,9 +36,11 @@ function VenueManagementPage() {
   const [debouncedSearch, setDebouncedSearch] = useState(defaultFilters.search);
   const [data, setData] = useState<VenueListData>(emptyData);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [deactivateTarget, setDeactivateTarget] = useState<Venue | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [togglingVenueId, setTogglingVenueId] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -47,42 +51,116 @@ function VenueManagementPage() {
   }, [filters.search]);
 
   useEffect(() => {
-    void loadVenues({
-      ...filters,
-      search: debouncedSearch,
-    });
-  }, [debouncedSearch, filters.page, filters.limit, filters.location, filters.minCapacity, filters.status]);
+    void loadVenues(
+      {
+        ...filters,
+        search: debouncedSearch,
+        offset: 0,
+      },
+      { append: false },
+    );
+  }, [debouncedSearch, filters.limit, filters.location, filters.minCapacity, filters.status]);
 
-  const loadVenues = async (nextFilters: VenueListFilters): Promise<void> => {
+  useEffect(() => {
+    if (!toast) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => setToast(null), 2400);
+    return () => window.clearTimeout(timeoutId);
+  }, [toast]);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+
+    if (!target || loading || loadingMore || !data.hasMore) {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const firstEntry = entries[0];
+
+        if (firstEntry?.isIntersecting) {
+          void loadVenues(
+            {
+              ...filters,
+              search: debouncedSearch,
+              offset: data.venues.length,
+            },
+            { append: true },
+          );
+        }
+      },
+      {
+        rootMargin: '220px 0px',
+        threshold: 0.01,
+      },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [data.hasMore, data.venues.length, debouncedSearch, filters, loading, loadingMore]);
+
+  const loadVenues = async (nextFilters: VenueListFilters, options: { append: boolean }): Promise<void> => {
     try {
-      setLoading(true);
+      if (options.append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+
       setError(null);
       const response = await venueService.getVenues(nextFilters);
-      setData(response.data ?? emptyData);
+      const responseData = response.data ?? emptyData;
+
+      setData((current) => ({
+        venues: options.append ? [...current.venues, ...responseData.venues] : responseData.venues,
+        hasMore: responseData.hasMore,
+        pagination: responseData.pagination,
+      }));
     } catch (requestError) {
       setError(getApiErrorMessage(requestError));
     } finally {
-      setLoading(false);
+      if (options.append) {
+        setLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
-  const handleDeactivate = async (): Promise<void> => {
-    if (!deactivateTarget) {
-      return;
-    }
+  const handleToggleStatus = async (venue: Venue): Promise<void> => {
+    const previousVenues = data.venues;
+    const nextIsActive = !venue.isActive;
+
+    setError(null);
+    setTogglingVenueId(venue.id);
+    setData((current) => ({
+      ...current,
+      venues: current.venues.map((item) => (item.id === venue.id ? { ...item, isActive: nextIsActive } : item)),
+    }));
 
     try {
-      setSubmitting(true);
-      await venueService.deactivateVenue(deactivateTarget.id);
-      setDeactivateTarget(null);
-      await loadVenues({
-        ...filters,
-        search: debouncedSearch,
-      });
+      const response = await venueService.toggleVenueStatus(venue.id);
+      const updatedVenue = response.data;
+
+      if (updatedVenue) {
+        setData((current) => ({
+          ...current,
+          venues: current.venues.map((item) => (item.id === venue.id ? updatedVenue : item)),
+        }));
+      }
+
+      setToast(nextIsActive ? 'Venue Activated' : 'Venue Deactivated');
     } catch (requestError) {
+      setData((current) => ({
+        ...current,
+        venues: previousVenues,
+      }));
       setError(getApiErrorMessage(requestError));
     } finally {
-      setSubmitting(false);
+      setTogglingVenueId(null);
     }
   };
 
@@ -108,40 +186,28 @@ function VenueManagementPage() {
 
       <VenueFilters
         filters={filters}
-        onSearchChange={(value) => setFilters((current) => ({ ...current, page: 1, search: value }))}
-        onLocationChange={(value) => setFilters((current) => ({ ...current, page: 1, location: value }))}
-        onCapacityChange={(value) => setFilters((current) => ({ ...current, page: 1, minCapacity: value }))}
-        onStatusChange={(value) => setFilters((current) => ({ ...current, page: 1, status: value }))}
+        onSearchChange={(value) => setFilters((current) => ({ ...current, page: 1, offset: 0, search: value }))}
+        onLocationChange={(value) => setFilters((current) => ({ ...current, page: 1, offset: 0, location: value }))}
+        onCapacityChange={(value) => setFilters((current) => ({ ...current, page: 1, offset: 0, minCapacity: value }))}
+        onStatusChange={(value) => setFilters((current) => ({ ...current, page: 1, offset: 0, status: value }))}
       />
 
       {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
 
       <VenueTable
         venues={data.venues}
-        pagination={data.pagination}
         loading={loading}
-        onPageChange={(page) => setFilters((current) => ({ ...current, page }))}
-        onPageSizeChange={(limit) => setFilters((current) => ({ ...current, page: 1, limit }))}
-        onDeactivate={setDeactivateTarget}
+        loadingMore={loadingMore}
+        hasMore={data.hasMore}
+        onToggleStatus={(venue) => void handleToggleStatus(venue)}
+        togglingVenueId={togglingVenueId}
+        loadMoreRef={loadMoreRef}
       />
 
-      {deactivateTarget ? (
-        <Modal
-          eyebrow="Deactivate Venue"
-          title={`Mark ${deactivateTarget.name} inactive?`}
-          description="This venue will be marked inactive."
-          onClose={() => setDeactivateTarget(null)}
-          footer={
-            <>
-              <Button variant="secondary" onClick={() => setDeactivateTarget(null)}>
-                Cancel
-              </Button>
-              <Button variant="danger" disabled={submitting} onClick={() => void handleDeactivate()}>
-                {submitting ? 'Updating...' : 'Mark Inactive'}
-              </Button>
-            </>
-          }
-        />
+      {toast ? (
+        <div className="pointer-events-none fixed bottom-6 right-6 z-50 rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm font-medium text-emerald-700 shadow-2xl shadow-emerald-100">
+          {toast}
+        </div>
       ) : null}
     </section>
   );
