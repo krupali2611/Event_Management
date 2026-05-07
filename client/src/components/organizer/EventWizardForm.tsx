@@ -231,6 +231,8 @@ function EventWizardForm({
         venueId: values.venueId,
         startDate: new Date(values.startDate).toISOString(),
         endDate: new Date(values.endDate).toISOString(),
+        startTime: values.startTime || undefined,
+        endTime: values.endTime || undefined,
         eventId: initialEvent?.id,
       });
       setAvailability(response.data ?? null);

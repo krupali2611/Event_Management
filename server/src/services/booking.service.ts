@@ -1,4 +1,4 @@
-import type { Prisma, Venue, VenueBooking } from '@prisma/client';
+import { Prisma, type PrismaClient, type Venue, type VenueBooking } from '@prisma/client';
 import { VENUE_BOOKING_STATUS } from '@prisma/client';
 import { prisma } from '../config/prisma';
 import type { AuthenticatedUser } from '../types/auth.types';
@@ -11,35 +11,44 @@ import type {
   VenueBookingListItemDto,
   VenueBookingListQuery,
 } from '../types/venue-booking.types';
-import { validateBookingDateRange } from '../utils/dateUtils';
+import { dateTimeRangesOverlap, resolveDateTimeBoundary, validateBookingDateRange } from '../utils/dateUtils';
 import { AppError } from '../utils/response';
 
-function getVenueDelegate() {
-  if (!('venue' in prisma) || !prisma.venue) {
+type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
+
+type BookingSchedule = {
+  startDate: Date;
+  endDate: Date;
+  startTime?: string | null;
+  endTime?: string | null;
+};
+
+function getVenueDelegate(executor: PrismaExecutor = prisma) {
+  if (!('venue' in executor) || !executor.venue) {
     throw new AppError('Venue model is not available in the Prisma client. Run Prisma generate and restart the server.', 500);
   }
 
-  return prisma.venue;
+  return executor.venue;
 }
 
-function getVenueBookingDelegate() {
-  if (!('venueBooking' in prisma) || !prisma.venueBooking) {
+function getVenueBookingDelegate(executor: PrismaExecutor = prisma) {
+  if (!('venueBooking' in executor) || !executor.venueBooking) {
     throw new AppError('VenueBooking model is not available in the Prisma client. Run Prisma generate and restart the server.', 500);
   }
 
-  return prisma.venueBooking;
+  return executor.venueBooking;
 }
 
-function getEventDelegate() {
-  if (!('event' in prisma) || !prisma.event) {
+function getEventDelegate(executor: PrismaExecutor = prisma) {
+  if (!('event' in executor) || !executor.event) {
     throw new AppError('Event model is not available in the Prisma client. Run Prisma generate and restart the server.', 500);
   }
 
-  return prisma.event;
+  return executor.event;
 }
 
-async function ensureVenueExists(venueId: string): Promise<Venue> {
-  const venue = await getVenueDelegate().findUnique({ where: { id: venueId } });
+async function ensureVenueExists(venueId: string, executor: PrismaExecutor = prisma): Promise<Venue> {
+  const venue = await getVenueDelegate(executor).findUnique({ where: { id: venueId } });
 
   if (!venue) {
     throw new AppError('Venue not found', 404);
@@ -48,14 +57,26 @@ async function ensureVenueExists(venueId: string): Promise<Venue> {
   return venue;
 }
 
-async function ensureBookingExists(id: string): Promise<VenueBooking> {
-  const booking = await getVenueBookingDelegate().findUnique({ where: { id } });
+async function ensureBookingExists(id: string, executor: PrismaExecutor = prisma): Promise<VenueBooking> {
+  const booking = await getVenueBookingDelegate(executor).findUnique({ where: { id } });
 
   if (!booking) {
     throw new AppError('Venue booking not found', 404);
   }
 
   return booking;
+}
+
+function getScheduleStartAt(schedule: BookingSchedule): Date {
+  return resolveDateTimeBoundary(schedule.startDate, schedule.startTime, false);
+}
+
+function getScheduleEndAt(schedule: BookingSchedule): Date {
+  return resolveDateTimeBoundary(schedule.endDate, schedule.endTime, true);
+}
+
+function schedulesOverlap(left: BookingSchedule, right: BookingSchedule): boolean {
+  return dateTimeRangesOverlap(getScheduleStartAt(left), getScheduleEndAt(left), getScheduleStartAt(right), getScheduleEndAt(right));
 }
 
 function toVenueBookingDto(
@@ -131,9 +152,15 @@ function canManageAllBookings(user: AuthenticatedUser): boolean {
 
 export async function checkAvailability(input: CheckAvailabilityInput): Promise<BookingAvailabilityResult> {
   await ensureVenueExists(input.venueId);
-  const { startDate, endDate } = validateBookingDateRange(input.startDate, input.endDate);
+  return checkAvailabilityInTransaction(prisma, input);
+}
 
-  const conflictingBooking = await getVenueBookingDelegate().findFirst({
+export async function checkAvailabilityInTransaction(
+  executor: PrismaExecutor,
+  input: CheckAvailabilityInput,
+): Promise<BookingAvailabilityResult> {
+  const { startDate, endDate } = validateBookingDateRange(input.startDate, input.endDate);
+  const conflictingBookings = await getVenueBookingDelegate(executor).findMany({
     where: {
       venueId: input.venueId,
       status: VENUE_BOOKING_STATUS.BOOKED,
@@ -148,8 +175,31 @@ export async function checkAvailability(input: CheckAvailabilityInput): Promise<
           }
         : {}),
     },
-    select: { id: true, eventId: true },
+    select: {
+      id: true,
+      startDate: true,
+      endDate: true,
+      startTime: true,
+      endTime: true,
+    },
   });
+
+  const conflictingBooking = conflictingBookings.find((booking) =>
+    schedulesOverlap(
+      {
+        startDate: booking.startDate,
+        endDate: booking.endDate,
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+      },
+      {
+        startDate,
+        endDate,
+        startTime: input.startTime ?? null,
+        endTime: input.endTime ?? null,
+      },
+    ),
+  );
 
   if (!conflictingBooking) {
     return {
@@ -164,24 +214,35 @@ export async function checkAvailability(input: CheckAvailabilityInput): Promise<
 }
 
 export async function createBooking(payload: CreateVenueBookingInput): Promise<VenueBookingDto> {
-  const venue = await ensureVenueExists(payload.venueId);
+  return createBookingInTransaction(prisma, payload);
+}
+
+export async function createBookingInTransaction(
+  executor: PrismaExecutor,
+  payload: CreateVenueBookingInput,
+): Promise<VenueBookingDto> {
+  const venue = await ensureVenueExists(payload.venueId, executor);
 
   if (!venue.isActive) {
     throw new AppError('Inactive venues cannot be booked', 400);
   }
 
   const { startDate, endDate } = validateBookingDateRange(payload.startDate, payload.endDate);
-  const availability = await checkAvailability({
+  const availability = await checkAvailabilityInTransaction(executor, {
     venueId: payload.venueId,
     startDate: payload.startDate,
     endDate: payload.endDate,
+    startTime: payload.startTime,
+    endTime: payload.endTime,
+    excludeBookingId: undefined,
+    eventId: payload.eventId ?? undefined,
   });
 
   if (!availability.available) {
     throw new AppError('Venue is not available for the selected date range', 409);
   }
 
-  const existingExactBooking = await getVenueBookingDelegate().findFirst({
+  const existingExactBooking = await getVenueBookingDelegate(executor).findFirst({
     where: {
       venueId: payload.venueId,
       startDate,
@@ -197,7 +258,7 @@ export async function createBooking(payload: CreateVenueBookingInput): Promise<V
     throw new AppError('An identical booking already exists for this venue', 409);
   }
 
-  const booking = await getVenueBookingDelegate().create({
+  const booking = await getVenueBookingDelegate(executor).create({
     data: {
       venueId: payload.venueId,
       startDate,
@@ -325,7 +386,15 @@ export async function getBookingById(id: string, user: AuthenticatedUser): Promi
 }
 
 export async function cancelBooking(id: string, user?: AuthenticatedUser): Promise<VenueBookingDto> {
-  const existingBooking = await ensureBookingExists(id);
+  return cancelBookingInTransaction(prisma, id, user);
+}
+
+export async function cancelBookingInTransaction(
+  executor: PrismaExecutor,
+  id: string,
+  user?: AuthenticatedUser,
+): Promise<VenueBookingDto> {
+  const existingBooking = await ensureBookingExists(id, executor);
 
   if (user && !canManageAllBookings(user) && existingBooking.createdById !== user.id) {
     throw new AppError('You do not have permission to cancel this venue booking', 403);
@@ -335,7 +404,7 @@ export async function cancelBooking(id: string, user?: AuthenticatedUser): Promi
     throw new AppError('Venue booking is already cancelled', 400);
   }
 
-  const booking = await getVenueBookingDelegate().update({
+  const booking = await getVenueBookingDelegate(executor).update({
     where: { id },
     data: { status: VENUE_BOOKING_STATUS.CANCELLED },
     include: {
@@ -354,7 +423,11 @@ export async function cancelBooking(id: string, user?: AuthenticatedUser): Promi
 }
 
 export async function cancelBookingsForEvent(eventId: string): Promise<void> {
-  await getVenueBookingDelegate().updateMany({
+  await cancelBookingsForEventInTransaction(prisma, eventId);
+}
+
+export async function cancelBookingsForEventInTransaction(executor: PrismaExecutor, eventId: string): Promise<void> {
+  await getVenueBookingDelegate(executor).updateMany({
     where: {
       eventId,
       status: VENUE_BOOKING_STATUS.BOOKED,

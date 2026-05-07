@@ -25,7 +25,9 @@ export async function getVenues(filters: VenueListFilters) {
   return venueService.getVenues(filters);
 }
 
-export async function checkAvailability(payload: Pick<CreateVenueBookingPayload, 'venueId' | 'startDate' | 'endDate' | 'eventId'>) {
+export async function checkAvailability(
+  payload: Pick<CreateVenueBookingPayload, 'venueId' | 'startDate' | 'endDate' | 'startTime' | 'endTime' | 'eventId'>,
+) {
   return venueBookingService.checkAvailability(payload);
 }
 

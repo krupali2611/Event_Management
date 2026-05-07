@@ -61,6 +61,7 @@ model Event {
   updatedAt      DateTime       @updatedAt
   organizer      User           @relation("OrganizerEvents", fields: [organizerId], references: [id], onDelete: Restrict)
   venue          Venue?         @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  venueBookings  VenueBooking[] @relation("EventVenueBookings")
   registrations  Registration[]
 
   @@index([organizerId])
@@ -124,6 +125,7 @@ model VenueBooking {
   createdAt   DateTime             @default(now())
   updatedAt   DateTime             @updatedAt
   venue       Venue                @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  event       Event?               @relation("EventVenueBookings", fields: [eventId], references: [id], onDelete: SetNull)
   createdBy   User?                @relation("VenueBookingCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([venueId, startDate, endDate])

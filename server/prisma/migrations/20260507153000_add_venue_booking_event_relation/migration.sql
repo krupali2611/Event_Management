@@ -1,0 +1,5 @@
+ALTER TABLE "VenueBooking"
+ADD CONSTRAINT "VenueBooking_eventId_fkey"
+FOREIGN KEY ("eventId") REFERENCES "Event"("id")
+ON DELETE SET NULL
+ON UPDATE CASCADE;

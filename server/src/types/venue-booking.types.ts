@@ -39,6 +39,8 @@ export interface CheckAvailabilityInput {
   venueId: string;
   startDate: string;
   endDate: string;
+  startTime?: string;
+  endTime?: string;
   excludeBookingId?: string;
   eventId?: string;
 }

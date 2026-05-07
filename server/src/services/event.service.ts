@@ -1,6 +1,6 @@
-import { Prisma, type Event, type VenueBooking } from '@prisma/client';
+import { Prisma, type Event, type PrismaClient, type VenueBooking } from '@prisma/client';
 import { prisma } from '../config/prisma';
-import { cancelBookingsForEvent } from './booking.service';
+import { cancelBookingsForEventInTransaction, createBookingInTransaction } from './booking.service';
 import type { AuthenticatedUser } from '../types/auth.types';
 import type {
   CreateEventInput,
@@ -12,7 +12,7 @@ import type {
   UpdateEventInput,
   UpdateEventStatusInput,
 } from '../types/event.types';
-import { bookingApiClient } from '../utils/apiClient';
+import { dateTimeRangesOverlap, resolveDateTimeBoundary } from '../utils/dateUtils';
 import { AppError } from '../utils/response';
 
 type EventRecord = Pick<
@@ -26,28 +26,37 @@ type EventRecord = Pick<
   organizer?: { id: string; name: string; email: string } | null;
 };
 
-function getEventDelegate() {
-  if (!('event' in prisma) || !prisma.event) {
+type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
+
+type EventSchedule = {
+  startDate: Date;
+  endDate: Date;
+  startTime: string | null;
+  endTime: string | null;
+};
+
+function getEventDelegate(executor: PrismaExecutor = prisma) {
+  if (!('event' in executor) || !executor.event) {
     throw new AppError('Event model is not available in the Prisma client. Run Prisma generate and restart the server.', 500);
   }
 
-  return prisma.event;
+  return executor.event;
 }
 
-function getVenueBookingDelegate() {
-  if (!('venueBooking' in prisma) || !prisma.venueBooking) {
+function getVenueBookingDelegate(executor: PrismaExecutor = prisma) {
+  if (!('venueBooking' in executor) || !executor.venueBooking) {
     throw new AppError('VenueBooking model is not available in the Prisma client. Run Prisma generate and restart the server.', 500);
   }
 
-  return prisma.venueBooking;
+  return executor.venueBooking;
 }
 
-function getVenueDelegate() {
-  if (!('venue' in prisma) || !prisma.venue) {
+function getVenueDelegate(executor: PrismaExecutor = prisma) {
+  if (!('venue' in executor) || !executor.venue) {
     throw new AppError('Venue model is not available in the Prisma client. Run Prisma generate and restart the server.', 500);
   }
 
-  return prisma.venue;
+  return executor.venue;
 }
 
 function getEventModelFieldNames(): Set<string> {
@@ -179,27 +188,16 @@ function getStartOfDay(date: Date): Date {
   return startOfDay;
 }
 
-function resolveEventBoundary(date: Date, time: string | null | undefined, endOfDay: boolean): Date {
-  const boundary = new Date(date);
-
-  if (!time) {
-    boundary.setHours(endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0, endOfDay ? 999 : 0);
-    return boundary;
-  }
-
-  const [hoursPart, minutesPart] = time.split(':');
-  const hours = Number.parseInt(hoursPart ?? '0', 10);
-  const minutes = Number.parseInt(minutesPart ?? '0', 10);
-  boundary.setHours(Number.isNaN(hours) ? 0 : hours, Number.isNaN(minutes) ? 0 : minutes, endOfDay ? 59 : 0, endOfDay ? 999 : 0);
-  return boundary;
-}
-
 function getEventStartAt(event: Pick<Event, 'startDate' | 'startTime'>): Date {
-  return resolveEventBoundary(event.startDate, event.startTime, false);
+  return resolveDateTimeBoundary(event.startDate, event.startTime, false);
 }
 
 function getEventEndAt(event: Pick<Event, 'endDate' | 'endTime'>): Date {
-  return resolveEventBoundary(event.endDate, event.endTime, true);
+  return resolveDateTimeBoundary(event.endDate, event.endTime, true);
+}
+
+function schedulesOverlap(left: EventSchedule, right: EventSchedule): boolean {
+  return dateTimeRangesOverlap(getEventStartAt(left), getEventEndAt(left), getEventStartAt(right), getEventEndAt(right));
 }
 
 export function getEventStatus(event: Pick<Event, 'status' | 'startDate' | 'endDate' | 'startTime' | 'endTime'>): EventLifecycleStatus {
@@ -264,35 +262,55 @@ function canManageAllEvents(user: AuthenticatedUser): boolean {
 }
 
 async function ensurePublishedVenueConflictFree(input: {
+  executor?: PrismaExecutor;
   eventId?: string;
   venueId: string;
   startDate: Date;
   endDate: Date;
+  startTime?: string | null;
+  endTime?: string | null;
 }): Promise<void> {
-  const conflictingEvent = await getEventDelegate().findFirst({
+  const candidateEvents = await getEventDelegate(input.executor).findMany({
     where: {
       venueId: input.venueId,
       status: 'PUBLISHED',
       ...(input.eventId ? { NOT: { id: input.eventId } } : {}),
-      AND: [
-        {
-          startDate: { lt: input.endDate },
-        },
-        {
-          endDate: { gt: input.startDate },
-        },
-      ],
+      startDate: { lte: input.endDate },
+      endDate: { gte: input.startDate },
     },
-    select: { id: true },
+    select: {
+      id: true,
+      startDate: true,
+      endDate: true,
+      startTime: true,
+      endTime: true,
+    },
   });
+
+  const conflictingEvent = candidateEvents.find((event) =>
+    schedulesOverlap(
+      {
+        startDate: event.startDate,
+        endDate: event.endDate,
+        startTime: event.startTime,
+        endTime: event.endTime,
+      },
+      {
+        startDate: input.startDate,
+        endDate: input.endDate,
+        startTime: input.startTime ?? null,
+        endTime: input.endTime ?? null,
+      },
+    ),
+  );
 
   if (conflictingEvent) {
     throw new AppError('Venue is already booked for the selected schedule', 409);
   }
 }
 
-async function getActiveEventVenueBooking(eventId: string): Promise<VenueBooking | null> {
-  return getVenueBookingDelegate().findFirst({
+async function getActiveEventVenueBooking(eventId: string, executor: PrismaExecutor = prisma): Promise<VenueBooking | null> {
+  return getVenueBookingDelegate(executor).findFirst({
     where: {
       eventId,
       status: 'BOOKED',
@@ -301,6 +319,7 @@ async function getActiveEventVenueBooking(eventId: string): Promise<VenueBooking
 }
 
 async function reserveVenueForPublishedEvent(eventId: string, input: {
+  executor: PrismaExecutor;
   venueId: string;
   startDate: Date;
   endDate: Date;
@@ -309,13 +328,16 @@ async function reserveVenueForPublishedEvent(eventId: string, input: {
   createdById?: string;
 }): Promise<void> {
   await ensurePublishedVenueConflictFree({
+    executor: input.executor,
     eventId,
     venueId: input.venueId,
     startDate: input.startDate,
     endDate: input.endDate,
+    startTime: input.startTime,
+    endTime: input.endTime,
   });
 
-  await bookingApiClient.reserveVenue({
+  await createBookingInTransaction(input.executor, {
     venueId: input.venueId,
     startDate: input.startDate.toISOString(),
     endDate: input.endDate.toISOString(),
@@ -327,6 +349,7 @@ async function reserveVenueForPublishedEvent(eventId: string, input: {
 }
 
 async function syncPublishedEventVenueBooking(
+  executor: PrismaExecutor,
   eventId: string,
   currentEvent: Pick<Event, 'venueId'>,
   nextState: {
@@ -340,26 +363,29 @@ async function syncPublishedEventVenueBooking(
 ): Promise<void> {
   if (!nextState.venueId) {
     if (currentEvent.venueId) {
-      await bookingApiClient.cancelEventVenueReservation(eventId);
+      await cancelBookingsForEventInTransaction(executor, eventId);
     }
 
     return;
   }
 
   await ensurePublishedVenueConflictFree({
+    executor,
     eventId,
     venueId: nextState.venueId,
     startDate: nextState.startDate,
     endDate: nextState.endDate,
+    startTime: nextState.startTime,
+    endTime: nextState.endTime,
   });
 
-  const existingBooking = await getActiveEventVenueBooking(eventId);
+  const existingBooking = await getActiveEventVenueBooking(eventId, executor);
 
   if (existingBooking) {
-    await bookingApiClient.cancelEventVenueReservation(eventId);
+    await cancelBookingsForEventInTransaction(executor, eventId);
   }
 
-  await bookingApiClient.reserveVenue({
+  await createBookingInTransaction(executor, {
     venueId: nextState.venueId,
     startDate: nextState.startDate.toISOString(),
     endDate: nextState.endDate.toISOString(),
@@ -446,12 +472,12 @@ async function ensureEventAccess(id: string, user: AuthenticatedUser): Promise<E
   throw new AppError('You do not have permission to access this event', 403);
 }
 
-async function validateVenueCapacity(venueId: string | null | undefined, attendeeLimit: number): Promise<void> {
+async function validateVenueCapacity(venueId: string | null | undefined, attendeeLimit: number, executor: PrismaExecutor = prisma): Promise<void> {
   if (!venueId) {
     return;
   }
 
-  const venue = await getVenueDelegate().findUnique({
+  const venue = await getVenueDelegate(executor).findUnique({
     where: { id: venueId },
     select: { id: true, capacity: true },
   });
@@ -472,9 +498,9 @@ export async function createEvent(payload: CreateEventInput): Promise<EventDto> 
   const endDate = new Date(normalizedPayload.endDate);
   ensureValidDateRange(startDate, endDate);
   ensureStartDateIsFuture(startDate);
-  await validateVenueCapacity(normalizedPayload.venueId, normalizedPayload.attendeeLimit);
 
   const createdEvent = await prisma.$transaction(async (transaction) => {
+    await validateVenueCapacity(normalizedPayload.venueId, normalizedPayload.attendeeLimit, transaction);
     const [optionalImageData, optionalScalarData] = await Promise.all([
       getOptionalEventImageData({
         bannerImage: normalizedPayload.bannerImage ?? null,
@@ -506,6 +532,7 @@ export async function createEvent(payload: CreateEventInput): Promise<EventDto> 
     }
 
     await reserveVenueForPublishedEvent(event.id, {
+      executor: transaction,
       venueId: normalizedPayload.venueId,
       startDate,
       endDate,
@@ -682,7 +709,6 @@ export async function updateEvent(id: string, payload: UpdateEventInput, user: A
   const nextAttendeeLimit = normalizedPayload.attendeeLimit ?? existingEvent.attendeeLimit;
   const nextStartTime = normalizedPayload.startTime === undefined ? existingEvent.startTime : normalizedPayload.startTime ?? null;
   const nextEndTime = normalizedPayload.endTime === undefined ? existingEvent.endTime : normalizedPayload.endTime ?? null;
-  await validateVenueCapacity(nextVenueId, nextAttendeeLimit);
 
   const scheduleChanged =
     normalizedPayload.startDate !== undefined ||
@@ -691,17 +717,6 @@ export async function updateEvent(id: string, payload: UpdateEventInput, user: A
     normalizedPayload.endTime !== undefined;
   const venueChanged = normalizedPayload.venueId !== undefined && normalizedPayload.venueId !== existingEvent.venueId;
 
-  if (existingEvent.status === 'PUBLISHED' && (scheduleChanged || venueChanged)) {
-    await syncPublishedEventVenueBooking(id, existingEvent, {
-      venueId: nextVenueId,
-      startDate: nextStartDate,
-      endDate: nextEndDate,
-      startTime: nextStartTime,
-      endTime: nextEndTime,
-      organizerId: existingEvent.organizerId,
-    });
-  }
-
   const [optionalImageData, optionalScalarData] = await Promise.all([
     getOptionalEventImageData({
       ...(normalizedPayload.bannerImage !== undefined ? { bannerImage: normalizedPayload.bannerImage } : {}),
@@ -709,69 +724,112 @@ export async function updateEvent(id: string, payload: UpdateEventInput, user: A
     }),
     getOptionalEventScalarData({ ticketPrice: normalizedPayload.ticketPrice }),
   ]);
+  const nextEventState: EventRecord = {
+    ...existingEvent,
+    ...(normalizedPayload.title !== undefined ? { title: normalizedPayload.title } : {}),
+    ...(normalizedPayload.description !== undefined ? { description: normalizedPayload.description ?? null } : {}),
+    ...(normalizedPayload.category !== undefined ? { category: normalizedPayload.category } : {}),
+    ...(normalizedPayload.startDate !== undefined ? { startDate: nextStartDate } : {}),
+    ...(normalizedPayload.endDate !== undefined ? { endDate: nextEndDate } : {}),
+    startTime: nextStartTime,
+    endTime: nextEndTime,
+    attendeeLimit: nextAttendeeLimit,
+    venueId: nextVenueId,
+    ...(normalizedPayload.ticketPrice !== undefined ? { ticketPrice: normalizedPayload.ticketPrice } : {}),
+    ...(normalizedPayload.bannerImage !== undefined ? { bannerImage: normalizedPayload.bannerImage } : {}),
+    ...(normalizedPayload.galleryImages !== undefined ? { galleryImages: normalizedPayload.galleryImages } : {}),
+  };
 
-  await getEventDelegate().update({
-    where: { id },
-    data: {
-      ...(normalizedPayload.title !== undefined ? { title: normalizedPayload.title } : {}),
-      ...(normalizedPayload.description !== undefined ? { description: normalizedPayload.description ?? null } : {}),
-      ...optionalImageData,
-      ...(normalizedPayload.category !== undefined ? { category: normalizedPayload.category } : {}),
-      ...optionalScalarData,
-      ...(normalizedPayload.startDate !== undefined ? { startDate: nextStartDate } : {}),
-      ...(normalizedPayload.endDate !== undefined ? { endDate: nextEndDate } : {}),
-      ...(normalizedPayload.startTime !== undefined ? { startTime: normalizedPayload.startTime ?? null } : {}),
-      ...(normalizedPayload.endTime !== undefined ? { endTime: normalizedPayload.endTime ?? null } : {}),
-      ...(normalizedPayload.attendeeLimit !== undefined ? { attendeeLimit: normalizedPayload.attendeeLimit } : {}),
-      ...(normalizedPayload.venueId !== undefined ? { venueId: normalizedPayload.venueId } : {}),
-    },
+  await prisma.$transaction(async (transaction) => {
+    await validateVenueCapacity(nextVenueId, nextAttendeeLimit, transaction);
+
+    if (existingEvent.status === 'PUBLISHED' && (scheduleChanged || venueChanged)) {
+      await syncPublishedEventVenueBooking(transaction, id, existingEvent, {
+        venueId: nextVenueId,
+        startDate: nextStartDate,
+        endDate: nextEndDate,
+        startTime: nextStartTime,
+        endTime: nextEndTime,
+        organizerId: existingEvent.organizerId,
+      });
+    }
+
+    await getEventDelegate(transaction).update({
+      where: { id },
+      data: {
+        ...(normalizedPayload.title !== undefined ? { title: normalizedPayload.title } : {}),
+        ...(normalizedPayload.description !== undefined ? { description: normalizedPayload.description ?? null } : {}),
+        ...optionalImageData,
+        ...(normalizedPayload.category !== undefined ? { category: normalizedPayload.category } : {}),
+        ...optionalScalarData,
+        ...(normalizedPayload.startDate !== undefined ? { startDate: nextStartDate } : {}),
+        ...(normalizedPayload.endDate !== undefined ? { endDate: nextEndDate } : {}),
+        ...(normalizedPayload.startTime !== undefined ? { startTime: normalizedPayload.startTime ?? null } : {}),
+        ...(normalizedPayload.endTime !== undefined ? { endTime: normalizedPayload.endTime ?? null } : {}),
+        ...(normalizedPayload.attendeeLimit !== undefined ? { attendeeLimit: normalizedPayload.attendeeLimit } : {}),
+        ...(normalizedPayload.venueId !== undefined ? { venueId: normalizedPayload.venueId } : {}),
+      },
+    });
+
+    if (normalizedPayload.status !== undefined && normalizedPayload.status !== existingEvent.status) {
+      await updateEventStatusInTransaction(transaction, id, { status: normalizedPayload.status }, user, nextEventState);
+    }
   });
-
-  if (normalizedPayload.status !== undefined && normalizedPayload.status !== existingEvent.status) {
-    return updateEventStatus(id, { status: normalizedPayload.status }, user);
-  }
 
   return getEventById(id, user);
 }
 
 export async function updateEventStatus(id: string, payload: UpdateEventStatusInput, user: AuthenticatedUser): Promise<EventDto> {
   const existingEvent = await ensureEventAccess(id, user);
-  assertEventIsMutable(existingEvent);
+  await prisma.$transaction(async (transaction) => {
+    await updateEventStatusInTransaction(transaction, id, payload, user, existingEvent);
+  });
+  return getEventById(id, user);
+}
 
-  if (existingEvent.status === payload.status) {
-    return getEventById(id, user);
+async function updateEventStatusInTransaction(
+  transaction: Prisma.TransactionClient,
+  id: string,
+  payload: UpdateEventStatusInput,
+  user: AuthenticatedUser,
+  existingEvent?: EventRecord,
+): Promise<void> {
+  const currentEvent = existingEvent ?? (await ensureEventAccess(id, user));
+  assertEventIsMutable(currentEvent);
+
+  if (currentEvent.status === payload.status) {
+    return;
   }
 
-  if (!canTransitionToStatus(existingEvent.status as EventStatus, payload.status)) {
-    throw new AppError(`Invalid event status transition from ${existingEvent.status} to ${payload.status}`, 400);
+  if (!canTransitionToStatus(currentEvent.status as EventStatus, payload.status)) {
+    throw new AppError(`Invalid event status transition from ${currentEvent.status} to ${payload.status}`, 400);
   }
 
   if (payload.status === 'PUBLISHED') {
-    if (!existingEvent.venueId) {
+    if (!currentEvent.venueId) {
       throw new AppError('A venue is required before publishing an event', 400);
     }
 
-    ensureStartDateIsFuture(existingEvent.startDate);
+    ensureStartDateIsFuture(currentEvent.startDate);
     await reserveVenueForPublishedEvent(id, {
-      venueId: existingEvent.venueId,
-      startDate: existingEvent.startDate,
-      endDate: existingEvent.endDate,
-      startTime: existingEvent.startTime,
-      endTime: existingEvent.endTime,
-      createdById: existingEvent.organizerId,
+      executor: transaction,
+      venueId: currentEvent.venueId,
+      startDate: currentEvent.startDate,
+      endDate: currentEvent.endDate,
+      startTime: currentEvent.startTime,
+      endTime: currentEvent.endTime,
+      createdById: currentEvent.organizerId,
     });
   }
 
-  if (existingEvent.status === 'PUBLISHED' && payload.status === 'CANCELLED') {
-    await cancelBookingsForEvent(id);
+  if (currentEvent.status === 'PUBLISHED' && payload.status === 'CANCELLED') {
+    await cancelBookingsForEventInTransaction(transaction, id);
   }
 
-  await getEventDelegate().update({
+  await getEventDelegate(transaction).update({
     where: { id },
     data: { status: payload.status },
   });
-
-  return getEventById(id, user);
 }
 
 export async function deleteEvent(id: string, user: AuthenticatedUser): Promise<void> {
@@ -781,9 +839,11 @@ export async function deleteEvent(id: string, user: AuthenticatedUser): Promise<
     throw new AppError('Only cancelled events can be deleted', 400);
   }
 
-  if (event.venueId) {
-    await cancelBookingsForEvent(id);
-  }
+  await prisma.$transaction(async (transaction) => {
+    if (event.venueId) {
+      await cancelBookingsForEventInTransaction(transaction, id);
+    }
 
-  await getEventDelegate().delete({ where: { id } });
+    await getEventDelegate(transaction).delete({ where: { id } });
+  });
 }

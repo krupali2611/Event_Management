@@ -47,3 +47,22 @@ export function validateBookingDateRange(startDateInput: string | Date, endDateI
 export function datesOverlap(existingStartDate: Date, existingEndDate: Date, newStartDate: Date, newEndDate: Date): boolean {
   return existingStartDate.getTime() <= newEndDate.getTime() && existingEndDate.getTime() >= newStartDate.getTime();
 }
+
+export function resolveDateTimeBoundary(date: Date, time: string | null | undefined, endOfDay: boolean): Date {
+  const boundary = new Date(date);
+
+  if (!time) {
+    boundary.setHours(endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0, endOfDay ? 999 : 0);
+    return boundary;
+  }
+
+  const [hoursPart, minutesPart] = time.split(':');
+  const hours = Number.parseInt(hoursPart ?? '0', 10);
+  const minutes = Number.parseInt(minutesPart ?? '0', 10);
+  boundary.setHours(Number.isNaN(hours) ? 0 : hours, Number.isNaN(minutes) ? 0 : minutes, endOfDay ? 59 : 0, endOfDay ? 999 : 0);
+  return boundary;
+}
+
+export function dateTimeRangesOverlap(startAtA: Date, endAtA: Date, startAtB: Date, endAtB: Date): boolean {
+  return startAtA.getTime() <= endAtB.getTime() && endAtA.getTime() >= startAtB.getTime();
+}
