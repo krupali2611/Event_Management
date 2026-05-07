@@ -1,4 +1,4 @@
-import { cancelBooking, checkAvailability, createBooking, getBookings } from '../services/booking.service';
+import { cancelBookingsForEvent, cancelBooking, checkAvailability, createBooking } from '../services/booking.service';
 import type { BookingAvailabilityResult, VenueBookingDto } from '../types/venue-booking.types';
 
 interface ReserveVenuePayload {
@@ -43,13 +43,6 @@ export const bookingApiClient = {
   },
 
   async cancelEventVenueReservation(eventId: string): Promise<void> {
-    const bookings = await getBookings({
-      page: 1,
-      limit: 50,
-      sort: 'desc',
-      upcomingOnly: false,
-    });
-    const eventBookings = bookings.bookings.filter((booking) => booking.eventId === eventId && booking.status === 'booked');
-    await Promise.all(eventBookings.map((booking) => cancelBooking(booking.id)));
+    await cancelBookingsForEvent(eventId);
   },
 };

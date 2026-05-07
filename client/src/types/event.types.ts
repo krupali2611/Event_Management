@@ -1,6 +1,7 @@
 import type { ApiResponse } from '@/types/api';
 
-export type EventStatus = 'draft' | 'published' | 'cancelled';
+export type EventStatus = 'DRAFT' | 'PUBLISHED' | 'CANCELLED';
+export type EventLifecycleStatus = 'UPCOMING' | 'ONGOING' | 'COMPLETED' | 'CANCELLED';
 
 export interface EventVenueSummary {
   id: string;
@@ -20,7 +21,11 @@ export interface EventItem {
   id: string;
   title: string;
   description: string | null;
+  image: string | null;
+  bannerImage: string | null;
+  galleryImages: string[];
   category: string;
+  ticketPrice: number;
   startDate: string;
   endDate: string;
   startTime: string | null;
@@ -29,6 +34,9 @@ export interface EventItem {
   venueId: string | null;
   organizerId: string;
   status: EventStatus;
+  lifecycleStatus: EventLifecycleStatus;
+  isEditable: boolean;
+  isDeletable: boolean;
   createdAt: string;
   updatedAt: string;
   venue?: EventVenueSummary | null;
@@ -38,7 +46,7 @@ export interface EventItem {
 export interface EventListFilters {
   page: number;
   limit: number;
-  category: string;
+  search: string;
   date: string;
   status: '' | EventStatus;
   includeUnpublished?: boolean;
@@ -57,7 +65,12 @@ export interface EventListData {
 export interface EventPayload {
   title: string;
   description?: string;
+  bannerImage?: string | null;
+  bannerImageFile?: File | null;
+  galleryImages?: string[];
+  galleryImageFiles?: File[];
   category: string;
+  ticketPrice: number;
   startDate: string;
   endDate: string;
   startTime?: string;

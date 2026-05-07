@@ -27,10 +27,7 @@ function AddVenuePage() {
 
   return (
     <section className="space-y-5">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-950">Add Venue</h2>
-        </div>
+      <div className="flex items-center justify-end gap-4">
         <Link to="/admin/venues">
           <Button variant="secondary" icon={<ArrowLeft className="h-4 w-4" />}>
             Back to Venues

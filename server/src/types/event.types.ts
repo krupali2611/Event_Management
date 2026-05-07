@@ -1,10 +1,15 @@
-export type EventStatus = 'draft' | 'published' | 'cancelled';
+export type EventStatus = 'DRAFT' | 'PUBLISHED' | 'CANCELLED';
+export type EventLifecycleStatus = 'UPCOMING' | 'ONGOING' | 'COMPLETED' | 'CANCELLED';
 
 export interface EventDto {
   id: string;
   title: string;
   description: string | null;
+  image: string | null;
+  bannerImage: string | null;
+  galleryImages: string[];
   category: string;
+  ticketPrice: number;
   startDate: Date;
   endDate: Date;
   startTime: string | null;
@@ -13,6 +18,9 @@ export interface EventDto {
   venueId: string | null;
   organizerId: string;
   status: EventStatus;
+  lifecycleStatus: EventLifecycleStatus;
+  isEditable: boolean;
+  isDeletable: boolean;
   createdAt: Date;
   updatedAt: Date;
   venue?: {
@@ -30,10 +38,11 @@ export interface EventDto {
 }
 
 export interface EventListQuery {
-  category?: string;
+  search?: string;
   date?: string;
   status?: EventStatus;
   includeUnpublished?: boolean;
+  organizerId?: string;
   page: number;
   limit: number;
 }
@@ -51,7 +60,10 @@ export interface PaginatedEventsData {
 export interface CreateEventInput {
   title: string;
   description?: string;
+  bannerImage?: string | null;
+  galleryImages?: string[];
   category: string;
+  ticketPrice: number;
   startDate: string;
   endDate: string;
   startTime?: string;
@@ -65,7 +77,10 @@ export interface CreateEventInput {
 export interface UpdateEventInput {
   title?: string;
   description?: string;
+  bannerImage?: string | null;
+  galleryImages?: string[];
   category?: string;
+  ticketPrice?: number;
   startDate?: string;
   endDate?: string;
   startTime?: string;
@@ -73,4 +88,8 @@ export interface UpdateEventInput {
   attendeeLimit?: number;
   venueId?: string | null;
   status?: EventStatus;
+}
+
+export interface UpdateEventStatusInput {
+  status: EventStatus;
 }

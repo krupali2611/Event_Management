@@ -5,8 +5,6 @@ function OrganizerPage() {
   return (
     <section className="space-y-6">
       <Card className="p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-600">Protected Route</p>
-        <h2 className="mt-4 text-3xl font-bold text-slate-950">Organizer Workspace</h2>
         <p className="mt-3 max-w-2xl text-slate-600">
           This route is available to ORGANIZER, ADMIN, and SUPER_ADMIN accounts for event-management workflows.
         </p>

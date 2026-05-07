@@ -168,9 +168,6 @@ function VenueManagementPage() {
     <section className="space-y-5">
       <div className="rounded-[1.85rem] border border-slate-200 bg-white/95 px-5 py-5 shadow-panel">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h2 className="mt-2 text-2xl font-semibold text-slate-950">Venue Management</h2>
-          </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
               {data.pagination.total} venues

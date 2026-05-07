@@ -1,5 +1,15 @@
 import type { VENUE_BOOKING_STATUS } from '@prisma/client';
 
+export interface VenueBookingListItemDto {
+  id: string;
+  venueName: string;
+  date: string;
+  time: string;
+  eventName: string;
+  status: Lowercase<VENUE_BOOKING_STATUS>;
+  organizerName?: string;
+}
+
 export interface VenueBookingDto {
   id: string;
   venueId: string;
@@ -30,6 +40,7 @@ export interface CheckAvailabilityInput {
   startDate: string;
   endDate: string;
   excludeBookingId?: string;
+  eventId?: string;
 }
 
 export interface CreateVenueBookingInput {
@@ -53,7 +64,7 @@ export interface VenueBookingListQuery {
 }
 
 export interface PaginatedVenueBookingsData {
-  bookings: VenueBookingDto[];
+  bookings: VenueBookingListItemDto[];
   pagination: {
     total: number;
     page: number;

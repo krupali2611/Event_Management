@@ -3,7 +3,7 @@ import VenueBookingTable from '@/components/organizer/VenueBookingTable';
 import Card from '@/components/ui/Card';
 import { venueBookingService } from '@/services/venueBooking.service';
 import { venueService } from '@/services/venue.service';
-import type { VenueBooking, VenueBookingListData, VenueBookingListFilters } from '@/types/venue-booking.types';
+import type { VenueBookingListData, VenueBookingListFilters } from '@/types/venue-booking.types';
 import type { Venue } from '@/types/venue.types';
 import { getApiErrorMessage } from '@/utils/getApiErrorMessage';
 
@@ -69,27 +69,19 @@ function VenueBookingsAdminPage() {
     }
   };
 
-  const handleCancel = async (booking: VenueBooking): Promise<void> => {
-    try {
-      setError(null);
-      await venueBookingService.cancelBooking(booking.id);
-      await loadBookings(filters);
-    } catch (requestError) {
-      setError(getApiErrorMessage(requestError));
-    }
-  };
-
   return (
     <section className="space-y-5">
-      <Card className="p-5">
+      <Card className="overflow-hidden p-0">
+        <div className="bg-[linear-gradient(120deg,#111827_0%,#0f766e_55%,#f59e0b_100%)] px-6 py-6 text-white">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/75">Admin Booking View</p>
+          <h2 className="mt-3 text-2xl font-semibold">All venue reservations across organizers</h2>
+          <p className="mt-2 max-w-3xl text-sm text-white/80">Review booking status, linked events, and organizer ownership from one place.</p>
+        </div>
+        <div className="p-5">
+        <div className="mb-4 rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+          Venue bookings are read-only here. They are cancelled automatically when their linked event is cancelled.
+        </div>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Operations Console</p>
-            <h2 className="mt-2 text-2xl font-semibold text-slate-950">Venue Bookings</h2>
-            <p className="mt-2 max-w-2xl text-sm text-slate-600">
-              Review active and cancelled venue reservations today, while keeping the module ready for future event-linked booking flows.
-            </p>
-          </div>
           <div className="grid gap-3 sm:grid-cols-4">
             <select
               value={filters.venueId}
@@ -125,6 +117,7 @@ function VenueBookingsAdminPage() {
             </select>
           </div>
         </div>
+        </div>
       </Card>
 
       {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
@@ -133,8 +126,6 @@ function VenueBookingsAdminPage() {
         bookings={bookingsData.bookings}
         loading={loading}
         pagination={bookingsData.pagination}
-        showCancelAction
-        onCancel={(booking) => void handleCancel(booking)}
         onPageChange={(page) => setFilters((current) => ({ ...current, page }))}
       />
     </section>

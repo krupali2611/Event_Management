@@ -8,7 +8,7 @@ import type {
 } from '@/types/venue-booking.types';
 
 export const venueBookingService = {
-  async checkAvailability(payload: Pick<CreateVenueBookingPayload, 'venueId' | 'startDate' | 'endDate'>): Promise<BookingAvailabilityResponse> {
+  async checkAvailability(payload: Pick<CreateVenueBookingPayload, 'venueId' | 'startDate' | 'endDate' | 'eventId'>): Promise<BookingAvailabilityResponse> {
     const response = await httpClient.post<BookingAvailabilityResponse>('/venue-bookings/check-availability', payload);
     return response.data;
   },
@@ -31,11 +31,6 @@ export const venueBookingService = {
       },
     });
 
-    return response.data;
-  },
-
-  async cancelBooking(id: string): Promise<VenueBookingResponse> {
-    const response = await httpClient.put<VenueBookingResponse>(`/venue-bookings/${id}/cancel`);
     return response.data;
   },
 };

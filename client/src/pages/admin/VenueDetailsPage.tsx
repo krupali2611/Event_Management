@@ -39,10 +39,7 @@ function VenueDetailsPage() {
 
   return (
     <section className="space-y-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-slate-950">Venue Details</h2>
-        </div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
         <div className="flex flex-wrap gap-3">
           <Link to="/admin/venues">
             <Button variant="secondary" icon={<ArrowLeft className="h-4 w-4" />}>

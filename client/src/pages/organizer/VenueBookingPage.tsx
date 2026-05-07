@@ -1,21 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
-import BookingAvailabilityPanel from '@/components/organizer/BookingAvailabilityPanel';
-import VenueBookingForm, { type VenueBookingFormValues } from '@/components/organizer/VenueBookingForm';
+import { useEffect, useState } from 'react';
 import VenueBookingTable from '@/components/organizer/VenueBookingTable';
 import Card from '@/components/ui/Card';
 import { venueBookingService } from '@/services/venueBooking.service';
 import { venueService } from '@/services/venue.service';
-import type { BookingAvailability, VenueBooking, VenueBookingListData, VenueBookingListFilters } from '@/types/venue-booking.types';
+import type { VenueBookingListData, VenueBookingListFilters } from '@/types/venue-booking.types';
 import type { Venue } from '@/types/venue.types';
 import { getApiErrorMessage } from '@/utils/getApiErrorMessage';
-
-const initialValues: VenueBookingFormValues = {
-  venueId: '',
-  startDate: '',
-  endDate: '',
-  startTime: '',
-  endTime: '',
-};
 
 const initialBookingListData: VenueBookingListData = {
   bookings: [],
@@ -29,8 +19,6 @@ const initialBookingListData: VenueBookingListData = {
 
 function VenueBookingPage() {
   const [venues, setVenues] = useState<Venue[]>([]);
-  const [formValues, setFormValues] = useState<VenueBookingFormValues>(initialValues);
-  const [availability, setAvailability] = useState<BookingAvailability | null>(null);
   const [bookingsData, setBookingsData] = useState<VenueBookingListData>(initialBookingListData);
   const [listFilters, setListFilters] = useState<VenueBookingListFilters>({
     venueId: '',
@@ -42,17 +30,8 @@ function VenueBookingPage() {
     limit: 10,
   });
   const [loadingVenues, setLoadingVenues] = useState(true);
-  const [checkingAvailability, setCheckingAvailability] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const canCheckAvailability = useMemo(
-    () => Boolean(formValues.venueId && formValues.startDate && formValues.endDate),
-    [formValues.endDate, formValues.startDate, formValues.venueId],
-  );
-
-  const canSubmit = Boolean(canCheckAvailability && availability?.available);
 
   useEffect(() => {
     void loadInitialData();
@@ -94,89 +73,21 @@ function VenueBookingPage() {
     }
   };
 
-  const handleChange = (field: keyof VenueBookingFormValues, value: string): void => {
-    setFormValues((current) => ({ ...current, [field]: value }));
-    if (field === 'venueId' || field === 'startDate' || field === 'endDate') {
-      setAvailability(null);
-    }
-  };
-
-  const handleCheckAvailability = async (): Promise<void> => {
-    if (!canCheckAvailability) {
-      setError('Select venue, start date, and end date before checking availability.');
-      return;
-    }
-
-    try {
-      setCheckingAvailability(true);
-      setError(null);
-      const response = await venueBookingService.checkAvailability({
-        venueId: formValues.venueId,
-        startDate: formValues.startDate,
-        endDate: formValues.endDate,
-      });
-      setAvailability(response.data ?? null);
-    } catch (requestError) {
-      setAvailability(null);
-      setError(getApiErrorMessage(requestError));
-    } finally {
-      setCheckingAvailability(false);
-    }
-  };
-
-  const handleSubmit = async (): Promise<void> => {
-    try {
-      setSubmitting(true);
-      setError(null);
-      await venueBookingService.createBooking({
-        venueId: formValues.venueId,
-        startDate: formValues.startDate,
-        endDate: formValues.endDate,
-        ...(formValues.startTime ? { startTime: formValues.startTime } : {}),
-        ...(formValues.endTime ? { endTime: formValues.endTime } : {}),
-      });
-      setFormValues(initialValues);
-      setAvailability(null);
-      await loadBookings(listFilters);
-    } catch (requestError) {
-      setError(getApiErrorMessage(requestError));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleCancel = async (booking: VenueBooking): Promise<void> => {
-    try {
-      setError(null);
-      await venueBookingService.cancelBooking(booking.id);
-      await loadBookings(listFilters);
-    } catch (requestError) {
-      setError(getApiErrorMessage(requestError));
-    }
-  };
-
   return (
     <section className="space-y-6">
-      <VenueBookingForm
-        values={formValues}
-        venues={venues}
-        checkingAvailability={checkingAvailability || loadingVenues}
-        submitting={submitting}
-        canSubmit={canSubmit}
-        onChange={handleChange}
-        onCheckAvailability={() => void handleCheckAvailability()}
-        onSubmit={() => void handleSubmit()}
-      />
-
-      <BookingAvailabilityPanel availability={availability} loading={checkingAvailability} />
-
       {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
 
-      <Card className="p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Live Booking Ledger</p>
-            <h3 className="mt-2 text-xl font-semibold text-slate-950">Upcoming venue reservations</h3>
+      <Card className="overflow-hidden p-0">
+        <div className="bg-[linear-gradient(120deg,#0f172a_0%,#1d4ed8_50%,#0f766e_100%)] px-6 py-6 text-white">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/75">Venue Bookings</p>
+          <h2 className="mt-3 text-2xl font-semibold">Bookings created from event publishing</h2>
+          <p className="mt-2 max-w-3xl text-sm text-white/80">
+            Review venue reservations created automatically through event publishing.
+          </p>
+        </div>
+        <div className="p-5">
+          <div className="mb-4 rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+            Manual cancellation is disabled. Venue bookings are released automatically when an event is cancelled.
           </div>
           <div className="grid gap-3 sm:grid-cols-4">
             <select
@@ -207,6 +118,7 @@ function VenueBookingPage() {
               value={listFilters.sort}
               onChange={(event) => setListFilters((current) => ({ ...current, page: 1, sort: event.target.value as 'asc' | 'desc' }))}
               className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-brand-500 focus:bg-white"
+              disabled={loadingVenues}
             >
               <option value="asc">Earliest first</option>
               <option value="desc">Latest first</option>
@@ -219,8 +131,6 @@ function VenueBookingPage() {
         bookings={bookingsData.bookings}
         loading={loadingBookings}
         pagination={bookingsData.pagination}
-        showCancelAction
-        onCancel={(booking) => void handleCancel(booking)}
         onPageChange={(page) => setListFilters((current) => ({ ...current, page }))}
       />
     </section>

@@ -1,12 +1,14 @@
 import type { Prisma, Venue, VenueBooking } from '@prisma/client';
 import { VENUE_BOOKING_STATUS } from '@prisma/client';
 import { prisma } from '../config/prisma';
+import type { AuthenticatedUser } from '../types/auth.types';
 import type {
   BookingAvailabilityResult,
   CheckAvailabilityInput,
   CreateVenueBookingInput,
   PaginatedVenueBookingsData,
   VenueBookingDto,
+  VenueBookingListItemDto,
   VenueBookingListQuery,
 } from '../types/venue-booking.types';
 import { validateBookingDateRange } from '../utils/dateUtils';
@@ -26,6 +28,14 @@ function getVenueBookingDelegate() {
   }
 
   return prisma.venueBooking;
+}
+
+function getEventDelegate() {
+  if (!('event' in prisma) || !prisma.event) {
+    throw new AppError('Event model is not available in the Prisma client. Run Prisma generate and restart the server.', 500);
+  }
+
+  return prisma.event;
 }
 
 async function ensureVenueExists(venueId: string): Promise<Venue> {
@@ -76,6 +86,49 @@ function toVenueBookingDto(
   };
 }
 
+function formatBookingDate(startDate: Date, endDate: Date): string {
+  const formatter = new Intl.DateTimeFormat('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+  const start = formatter.format(startDate);
+  const end = formatter.format(endDate);
+
+  return start === end ? start : `${start} - ${end}`;
+}
+
+function formatBookingTime(startTime: string | null, endTime: string | null): string {
+  if (!startTime && !endTime) {
+    return 'Flexible';
+  }
+
+  return `${startTime ?? '--:--'} - ${endTime ?? '--:--'}`;
+}
+
+function toVenueBookingListItemDto(
+  booking: VenueBooking & {
+    venue: { name: string };
+    createdBy?: { name: string } | null;
+  },
+  eventNameById: Map<string, string>,
+  includeOrganizerName: boolean,
+): VenueBookingListItemDto {
+  return {
+    id: booking.id,
+    venueName: booking.venue.name,
+    date: formatBookingDate(booking.startDate, booking.endDate),
+    time: formatBookingTime(booking.startTime, booking.endTime),
+    eventName: booking.eventId ? (eventNameById.get(booking.eventId) ?? 'Unlinked event') : 'Unlinked event',
+    status: booking.status.toLowerCase() as VenueBookingListItemDto['status'],
+    ...(includeOrganizerName ? { organizerName: booking.createdBy?.name ?? 'Unknown organizer' } : {}),
+  };
+}
+
+function canManageAllBookings(user: AuthenticatedUser): boolean {
+  return user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+}
+
 export async function checkAvailability(input: CheckAvailabilityInput): Promise<BookingAvailabilityResult> {
   await ensureVenueExists(input.venueId);
   const { startDate, endDate } = validateBookingDateRange(input.startDate, input.endDate);
@@ -86,14 +139,27 @@ export async function checkAvailability(input: CheckAvailabilityInput): Promise<
       status: VENUE_BOOKING_STATUS.BOOKED,
       startDate: { lte: endDate },
       endDate: { gte: startDate },
-      ...(input.excludeBookingId ? { NOT: { id: input.excludeBookingId } } : {}),
+      ...(input.excludeBookingId || input.eventId
+        ? {
+            NOT: {
+              ...(input.excludeBookingId ? { id: input.excludeBookingId } : {}),
+              ...(input.eventId ? { eventId: input.eventId } : {}),
+            },
+          }
+        : {}),
     },
-    select: { id: true },
+    select: { id: true, eventId: true },
   });
 
+  if (!conflictingBooking) {
+    return {
+      available: true,
+    };
+  }
+
   return {
-    available: !conflictingBooking,
-    ...(conflictingBooking ? { conflictBookingId: conflictingBooking.id } : {}),
+    available: false,
+    conflictBookingId: conflictingBooking.id,
   };
 }
 
@@ -157,7 +223,7 @@ export async function createBooking(payload: CreateVenueBookingInput): Promise<V
   return toVenueBookingDto(booking);
 }
 
-export async function getBookings(query: VenueBookingListQuery): Promise<PaginatedVenueBookingsData> {
+export async function getBookings(query: VenueBookingListQuery, user: AuthenticatedUser): Promise<PaginatedVenueBookingsData> {
   const whereClause: Prisma.VenueBookingWhereInput = {
     ...(query.venueId ? { venueId: query.venueId } : {}),
     ...(query.upcomingOnly
@@ -167,6 +233,7 @@ export async function getBookings(query: VenueBookingListQuery): Promise<Paginat
           },
         }
       : {}),
+    ...(canManageAllBookings(user) ? {} : { createdById: user.id }),
   };
 
   if (query.startDate || query.endDate) {
@@ -180,6 +247,7 @@ export async function getBookings(query: VenueBookingListQuery): Promise<Paginat
   }
 
   const skip = (query.page - 1) * query.limit;
+  const includeOrganizerName = canManageAllBookings(user);
   const [items, totalItems] = await Promise.all([
     getVenueBookingDelegate().findMany({
       where: whereClause,
@@ -192,6 +260,13 @@ export async function getBookings(query: VenueBookingListQuery): Promise<Paginat
             isActive: true,
           },
         },
+        createdBy: includeOrganizerName
+          ? {
+              select: {
+                name: true,
+              },
+            }
+          : false,
       },
       orderBy: [{ startDate: query.sort }, { createdAt: 'desc' }],
       skip,
@@ -200,8 +275,20 @@ export async function getBookings(query: VenueBookingListQuery): Promise<Paginat
     getVenueBookingDelegate().count({ where: whereClause }),
   ]);
 
+  const eventIds = [...new Set(items.map((booking) => booking.eventId).filter((eventId): eventId is string => Boolean(eventId)))];
+  const relatedEvents = eventIds.length
+    ? await getEventDelegate().findMany({
+        where: { id: { in: eventIds } },
+        select: {
+          id: true,
+          title: true,
+        },
+      })
+    : [];
+  const eventNameById = new Map(relatedEvents.map((event) => [event.id, event.title]));
+
   return {
-    bookings: items.map(toVenueBookingDto),
+    bookings: items.map((booking) => toVenueBookingListItemDto(booking, eventNameById, includeOrganizerName)),
     pagination: {
       total: totalItems,
       page: query.page,
@@ -211,7 +298,7 @@ export async function getBookings(query: VenueBookingListQuery): Promise<Paginat
   };
 }
 
-export async function getBookingById(id: string): Promise<VenueBookingDto> {
+export async function getBookingById(id: string, user: AuthenticatedUser): Promise<VenueBookingDto> {
   const booking = await getVenueBookingDelegate().findUnique({
     where: { id },
     include: {
@@ -230,11 +317,19 @@ export async function getBookingById(id: string): Promise<VenueBookingDto> {
     throw new AppError('Venue booking not found', 404);
   }
 
+  if (!canManageAllBookings(user) && booking.createdById !== user.id) {
+    throw new AppError('You do not have permission to access this venue booking', 403);
+  }
+
   return toVenueBookingDto(booking);
 }
 
-export async function cancelBooking(id: string): Promise<VenueBookingDto> {
+export async function cancelBooking(id: string, user?: AuthenticatedUser): Promise<VenueBookingDto> {
   const existingBooking = await ensureBookingExists(id);
+
+  if (user && !canManageAllBookings(user) && existingBooking.createdById !== user.id) {
+    throw new AppError('You do not have permission to cancel this venue booking', 403);
+  }
 
   if (existingBooking.status === VENUE_BOOKING_STATUS.CANCELLED) {
     throw new AppError('Venue booking is already cancelled', 400);
@@ -256,4 +351,16 @@ export async function cancelBooking(id: string): Promise<VenueBookingDto> {
   });
 
   return toVenueBookingDto(booking);
+}
+
+export async function cancelBookingsForEvent(eventId: string): Promise<void> {
+  await getVenueBookingDelegate().updateMany({
+    where: {
+      eventId,
+      status: VENUE_BOOKING_STATUS.BOOKED,
+    },
+    data: {
+      status: VENUE_BOOKING_STATUS.CANCELLED,
+    },
+  });
 }

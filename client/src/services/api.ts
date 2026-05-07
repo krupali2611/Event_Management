@@ -13,11 +13,19 @@ export async function getEventById(id: string) {
   return eventService.getEventById(id);
 }
 
+export async function getPublicEvents(filters: EventListFilters) {
+  return eventService.getPublicEvents(filters);
+}
+
+export async function getPublicEventById(id: string) {
+  return eventService.getPublicEventById(id);
+}
+
 export async function getVenues(filters: VenueListFilters) {
   return venueService.getVenues(filters);
 }
 
-export async function checkAvailability(payload: Pick<CreateVenueBookingPayload, 'venueId' | 'startDate' | 'endDate'>) {
+export async function checkAvailability(payload: Pick<CreateVenueBookingPayload, 'venueId' | 'startDate' | 'endDate' | 'eventId'>) {
   return venueBookingService.checkAvailability(payload);
 }
 

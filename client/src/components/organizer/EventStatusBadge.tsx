@@ -1,14 +1,25 @@
 import Badge from '@/components/ui/Badge';
-import type { EventStatus } from '@/types/event.types';
+import type { EventLifecycleStatus } from '@/types/event.types';
 
-const badgeCopy: Record<EventStatus, { label: string; color: 'amber' | 'green' | 'red' }> = {
-  draft: { label: 'Draft', color: 'amber' },
-  published: { label: 'Published', color: 'green' },
-  cancelled: { label: 'Cancelled', color: 'red' },
+const badgeCopy: Record<EventLifecycleStatus, { label: string; color: 'slate' | 'green' | 'red' | 'amber' }> = {
+  UPCOMING: { label: 'UPCOMING', color: 'slate' },
+  ONGOING: { label: 'ONGOING', color: 'green' },
+  COMPLETED: { label: 'COMPLETED', color: 'amber' },
+  CANCELLED: { label: 'CANCELLED', color: 'red' },
 };
 
-function EventStatusBadge({ status }: { status: EventStatus }) {
-  const resolved = badgeCopy[status];
+function normalizeEventStatus(status: string | null | undefined): EventLifecycleStatus {
+  const normalized = status?.toUpperCase();
+
+  if (normalized === 'ONGOING' || normalized === 'COMPLETED' || normalized === 'CANCELLED') {
+    return normalized;
+  }
+
+  return 'UPCOMING';
+}
+
+function EventStatusBadge({ status }: { status: EventLifecycleStatus | string | null | undefined; compact?: boolean }) {
+  const resolved = badgeCopy[normalizeEventStatus(status)];
   return <Badge color={resolved.color}>{resolved.label}</Badge>;
 }
 

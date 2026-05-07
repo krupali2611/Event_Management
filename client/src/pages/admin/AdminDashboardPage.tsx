@@ -25,7 +25,7 @@ function AdminDashboardPage() {
         const [usersResponse, venuesResponse, eventsResponse] = await Promise.all([
           userService.getUsers({ page: 1, limit: 1, search: '', role: '' }),
           getVenues({ page: 1, limit: 1, search: '', location: '', minCapacity: '', status: '', includeInactive: true }),
-          getEvents({ page: 1, limit: 1, category: '', date: '', status: 'published', includeUnpublished: true }),
+          getEvents({ page: 1, limit: 1, search: '', date: '', status: 'PUBLISHED', includeUnpublished: true }),
         ]);
 
         setCounts({

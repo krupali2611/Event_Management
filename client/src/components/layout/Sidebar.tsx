@@ -1,5 +1,5 @@
-import { Menu, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Menu, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ComponentType } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import type { UserRole } from '@/types/api';
@@ -12,16 +12,17 @@ export interface SidebarItem {
 
 interface SidebarProps {
   items: SidebarItem[];
-  title: string;
-  subtitle: string;
   role: UserRole;
   theme: 'dark' | 'light';
+  onCollapseChange?: (collapsed: boolean) => void;
 }
 
-function Sidebar({ items, title, subtitle, role, theme }: SidebarProps) {
+function Sidebar({ items, role, theme, onCollapseChange }: SidebarProps) {
   const [open, setOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const dark = theme === 'dark';
+  const dashboardTitle = role === 'ORGANIZER' ? 'Organizer Dashboard' : role === 'SUPER_ADMIN' ? 'Super Admin Dashboard' : 'Admin Dashboard';
 
   const shellClass = useMemo(
     () =>
@@ -30,6 +31,29 @@ function Sidebar({ items, title, subtitle, role, theme }: SidebarProps) {
         : 'border-slate-200 bg-white/95 text-slate-700',
     [dark],
   );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 1023px)');
+    const handleChange = (event: MediaQueryListEvent | MediaQueryList) => {
+      const matches = event.matches;
+
+      if (matches) {
+        setCollapsed(true);
+        setOpen(false);
+      } else {
+        setOpen(false);
+      }
+    };
+
+    handleChange(mediaQuery);
+    mediaQuery.addEventListener('change', handleChange);
+
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  useEffect(() => {
+    onCollapseChange?.(collapsed);
+  }, [collapsed, onCollapseChange]);
 
   return (
     <>
@@ -42,17 +66,30 @@ function Sidebar({ items, title, subtitle, role, theme }: SidebarProps) {
         {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
       </button>
 
+      <button
+        type="button"
+        onClick={() => setCollapsed((current) => !current)}
+        className={`fixed left-4 top-16 z-40 hidden h-10 w-10 items-center justify-center rounded-xl border transition lg:inline-flex ${shellClass}`}
+        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      >
+        {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+      </button>
+
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-72 border-r px-4 py-4 transition duration-200 lg:translate-x-0 ${shellClass} ${
+        className={`fixed inset-y-0 left-0 z-40 border-r px-4 py-4 transition-all duration-300 lg:translate-x-0 ${collapsed ? 'w-24' : 'w-72'} ${shellClass} ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className={`${dark ? 'border-[#1F2937] bg-[#0B1220]' : 'border-slate-200 bg-slate-50'} rounded-2xl border p-4`}>
-          <p className={`text-[11px] font-semibold uppercase tracking-[0.28em] ${dark ? 'text-[#9CA3AF]' : 'text-slate-500'}`}>
-            {role}
+          <p className={`text-[11px] font-semibold uppercase tracking-[0.32em] ${dark ? 'text-[#9CA3AF]' : 'text-slate-500'} ${collapsed ? 'text-center' : ''}`}>
+            Eventify
           </p>
-          <h2 className="mt-2 text-lg font-semibold">{title}</h2>
-          <p className={`mt-1 text-sm ${dark ? 'text-[#9CA3AF]' : 'text-slate-500'}`}>{subtitle}</p>
+          {!collapsed ? (
+            <>
+              <h2 className="mt-3 text-lg font-semibold">{dashboardTitle}</h2>
+              <p className={`mt-1 text-sm ${dark ? 'text-[#9CA3AF]' : 'text-slate-500'}`}>{role.replace('_', ' ')}</p>
+            </>
+          ) : null}
         </div>
 
         <nav className="mt-5 space-y-1.5">
@@ -65,7 +102,7 @@ function Sidebar({ items, title, subtitle, role, theme }: SidebarProps) {
                 key={item.to}
                 to={item.to}
                 onClick={() => setOpen(false)}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                className={`flex items-center rounded-xl px-3 py-2.5 text-sm font-medium transition ${collapsed ? 'justify-center' : 'gap-3'} ${
                   dark
                     ? active
                       ? 'bg-[#6366F1]/15 text-[#E5E7EB]'
@@ -74,9 +111,10 @@ function Sidebar({ items, title, subtitle, role, theme }: SidebarProps) {
                       ? 'bg-indigo-50 text-indigo-700'
                       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
+                title={collapsed ? item.label : undefined}
               >
                 <Icon className={`h-4 w-4 ${active && dark ? 'text-[#6366F1]' : ''}`} />
-                <span>{item.label}</span>
+                {!collapsed ? <span>{item.label}</span> : null}
               </Link>
             );
           })}

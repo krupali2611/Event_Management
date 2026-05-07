@@ -2,26 +2,14 @@ import type { ApiResponse } from '@/types/api';
 
 export type VenueBookingStatus = 'booked' | 'cancelled';
 
-export interface VenueBookingVenueSummary {
-  id: string;
-  name: string;
-  location: string;
-  isActive: boolean;
-}
-
 export interface VenueBooking {
   id: string;
-  venueId: string;
-  startDate: string;
-  endDate: string;
-  startTime: string | null;
-  endTime: string | null;
+  venueName: string;
+  date: string;
+  time: string;
+  eventName: string;
   status: VenueBookingStatus;
-  eventId: string | null;
-  createdBy: string | null;
-  createdAt: string;
-  updatedAt: string;
-  venue?: VenueBookingVenueSummary;
+  organizerName?: string;
 }
 
 export interface BookingAvailability {

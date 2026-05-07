@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import EventWizardForm from '@/components/organizer/EventWizardForm';
 import { createEvent, getVenues } from '@/services/api';
 import type { EventPayload } from '@/types/event.types';
@@ -8,10 +8,12 @@ import { getApiErrorMessage } from '@/utils/getApiErrorMessage';
 
 function CreateEventPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const eventsBasePath = location.pathname.startsWith('/admin') ? '/admin/events' : '/organizer/events';
 
   useEffect(() => {
     void (async () => {
@@ -33,7 +35,7 @@ function CreateEventPage() {
       setSubmitting(true);
       setError(null);
       const response = await createEvent(payload);
-      navigate(`/organizer/events/${response.data?.id ?? ''}`);
+      navigate(`${eventsBasePath}/${response.data?.id ?? ''}`);
     } catch (requestError) {
       setError(getApiErrorMessage(requestError));
     } finally {
@@ -43,14 +45,14 @@ function CreateEventPage() {
 
   return (
     <section className="space-y-5">
-      {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
-      {loading ? <div className="rounded-2xl border border-slate-200 bg-white px-4 py-6 text-sm text-slate-600">Loading venues...</div> : null}
+      {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
+      {loading ? <div className="rounded-xl border border-slate-200 bg-white px-4 py-6 text-sm text-slate-600">Loading venues...</div> : null}
       {!loading && venues.length === 0 ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800">
           No active venues found in the database. Add an active venue from admin venue management first.
         </div>
       ) : null}
-      {!loading && venues.length > 0 ? <EventWizardForm venues={venues} submitting={submitting} onSubmit={handleSubmit} /> : null}
+      {!loading && venues.length > 0 ? <EventWizardForm venues={venues} submitting={submitting} onSubmit={handleSubmit} mode="create" /> : null}
     </section>
   );
 }

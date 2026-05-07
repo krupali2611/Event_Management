@@ -1,4 +1,3 @@
-import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Table from '@/components/ui/Table';
 import type { VenueBooking } from '@/types/venue-booking.types';
@@ -12,29 +11,17 @@ interface VenueBookingTableProps {
     limit: number;
     totalPages: number;
   };
-  showCancelAction?: boolean;
-  onCancel?: (booking: VenueBooking) => void;
   onPageChange: (page: number) => void;
-}
-
-function formatDateRange(startDate: string, endDate: string): string {
-  const formatter = new Intl.DateTimeFormat('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-
-  return `${formatter.format(new Date(startDate))} - ${formatter.format(new Date(endDate))}`;
 }
 
 function VenueBookingTable({
   bookings,
   loading,
   pagination,
-  showCancelAction = false,
-  onCancel,
   onPageChange,
 }: VenueBookingTableProps) {
+  const showOrganizerColumn = bookings.some((booking) => Boolean(booking.organizerName));
+
   return (
     <Table
       footer={
@@ -59,54 +46,48 @@ function VenueBookingTable({
       }
     >
       <table className="min-w-full divide-y divide-slate-200">
-        <thead className="bg-slate-50">
+        <thead className="bg-slate-50/80">
           <tr className="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-            <th className="px-6 py-4">Venue</th>
-            <th className="px-6 py-4">Dates</th>
+            <th className="px-6 py-4">Venue Name</th>
+            <th className="px-6 py-4">Date</th>
             <th className="px-6 py-4">Time</th>
+            <th className="px-6 py-4">Event Name</th>
+            {showOrganizerColumn ? <th className="px-6 py-4">Organizer</th> : null}
             <th className="px-6 py-4">Status</th>
-            <th className="px-6 py-4">Future Event Link</th>
-            {showCancelAction ? <th className="px-6 py-4 text-right">Action</th> : null}
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
           {loading ? (
             <tr>
-              <td className="px-6 py-8 text-sm text-slate-500" colSpan={showCancelAction ? 6 : 5}>
+              <td className="px-6 py-8 text-sm text-slate-500" colSpan={showOrganizerColumn ? 6 : 5}>
                 Loading venue bookings...
               </td>
             </tr>
           ) : bookings.length === 0 ? (
             <tr>
-              <td className="px-6 py-8 text-sm text-slate-500" colSpan={showCancelAction ? 6 : 5}>
+              <td className="px-6 py-8 text-sm text-slate-500" colSpan={showOrganizerColumn ? 6 : 5}>
                 No bookings found for the current filters.
               </td>
             </tr>
           ) : (
             bookings.map((booking) => (
-              <tr key={booking.id} className="text-sm text-slate-700">
+              <tr key={booking.id} className="text-sm text-slate-700 transition-colors hover:bg-slate-50/80">
                 <td className="px-6 py-4">
-                  <p className="font-semibold text-slate-900">{booking.venue?.name ?? booking.venueId}</p>
-                  <p className="mt-1 text-xs text-slate-500">{booking.venue?.location ?? 'Venue summary unavailable'}</p>
+                  <p className="font-semibold text-slate-900">{booking.venueName}</p>
                 </td>
-                <td className="px-6 py-4">{formatDateRange(booking.startDate, booking.endDate)}</td>
-                <td className="px-6 py-4">{booking.startTime || booking.endTime ? `${booking.startTime ?? '--:--'} - ${booking.endTime ?? '--:--'}` : 'Flexible'}</td>
+                <td className="px-6 py-4">{booking.date}</td>
+                <td className="px-6 py-4">{booking.time}</td>
+                <td className="px-6 py-4 font-medium text-slate-800">{booking.eventName}</td>
+                {showOrganizerColumn ? <td className="px-6 py-4">{booking.organizerName ?? 'Unknown organizer'}</td> : null}
                 <td className="px-6 py-4">
-                  <Badge color={booking.status === 'booked' ? 'green' : 'red'}>{booking.status === 'booked' ? 'Booked' : 'Cancelled'}</Badge>
+                  <span
+                    className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                      booking.status === 'booked' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}
+                  >
+                    {booking.status === 'booked' ? 'Booked' : 'Cancelled'}
+                  </span>
                 </td>
-                <td className="px-6 py-4 text-slate-500">{booking.eventId ? 'Attached' : 'Ready for event mapping'}</td>
-                {showCancelAction ? (
-                  <td className="px-6 py-4 text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={booking.status === 'cancelled'}
-                      onClick={() => onCancel?.(booking)}
-                    >
-                      {booking.status === 'cancelled' ? 'Cancelled' : 'Cancel'}
-                    </Button>
-                  </td>
-                ) : null}
               </tr>
             ))
           )}

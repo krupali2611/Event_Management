@@ -18,6 +18,10 @@ const EditVenuePage = lazy(() => import('@/pages/admin/EditVenuePage'));
 const UserManagementPage = lazy(() => import('@/pages/admin/UserManagementPage'));
 const UserDetailsPage = lazy(() => import('@/pages/admin/UserDetailsPage'));
 const VenueBookingsAdminPage = lazy(() => import('@/pages/admin/VenueBookingsAdminPage'));
+const AdminEventsPage = lazy(() => import('@/pages/organizer/OrganizerEventsPage'));
+const AdminCreateEventPage = lazy(() => import('@/pages/organizer/CreateEventPage'));
+const AdminEditEventPage = lazy(() => import('@/pages/organizer/EditEventPage'));
+const AdminEventDetailPage = lazy(() => import('@/pages/organizer/EventDetailPage'));
 const OrganizerPage = lazy(() => import('@/pages/OrganizerPage'));
 const OrganizerEventsPage = lazy(() => import('@/pages/organizer/OrganizerEventsPage'));
 const VenueBookingPage = lazy(() => import('@/pages/organizer/VenueBookingPage'));
@@ -46,6 +50,10 @@ function AppRoutes() {
         <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']} />}>
           <Route element={<AdminLayout />}>
             <Route path="admin" element={<AdminDashboardPage />} />
+            <Route path="admin/events" element={<AdminEventsPage />} />
+            <Route path="admin/events/new" element={<AdminCreateEventPage />} />
+            <Route path="admin/events/:id" element={<AdminEventDetailPage />} />
+            <Route path="admin/events/:id/edit" element={<AdminEditEventPage />} />
             <Route path="admin/users" element={<UserManagementPage />} />
             <Route path="admin/users/:id" element={<UserDetailsPage />} />
             <Route path="admin/venues" element={<VenueManagementPage />} />
@@ -67,11 +75,11 @@ function AppRoutes() {
           </Route>
         </Route>
 
-        <Route element={<ProtectedRoute allowedRoles={['ATTENDEE', 'ORGANIZER', 'ADMIN', 'SUPER_ADMIN']} />}>
-          <Route element={<UserLayout />}>
-            <Route path="attendee" element={<AttendeePage />} />
-            <Route path="attendee/events/:id" element={<EventDetailPage />} />
-          </Route>
+        <Route element={<UserLayout />}>
+          <Route path="events" element={<AttendeePage />} />
+          <Route path="events/:id" element={<EventDetailPage />} />
+          <Route path="attendee" element={<AttendeePage />} />
+          <Route path="attendee/events/:id" element={<EventDetailPage />} />
         </Route>
 
         <Route element={<MainLayout />}>

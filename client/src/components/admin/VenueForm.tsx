@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Eye, ImageIcon, LoaderCircle, MapPin, Save, Upload, Users } from 'lucide-react';
+import { Eye, LoaderCircle, MapPin, Save, Upload, Users } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import VenueCard from '@/components/admin/VenueCard';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { venueService } from '@/services/venue.service';
@@ -59,13 +60,25 @@ function VenueForm({ mode, initialVenue, submitting, onSubmit }: VenueFormProps)
   });
 
   const imageUrl = watch('image');
-  const amenitiesPreview = useMemo(
-    () =>
-      (watch('amenities') ?? '')
+  const previewVenue = useMemo<Venue>(
+    () => ({
+      id: initialVenue?.id ?? 'preview',
+      name: watch('name')?.trim() || 'Venue name preview',
+      location: watch('location')?.trim() || 'Location preview',
+      address: watch('address')?.trim() || '',
+      capacity: Number(watch('capacity')) > 0 ? Number(watch('capacity')) : 1,
+      description: watch('description')?.trim() || '',
+      image: imageUrl?.trim() || '',
+      amenities: (watch('amenities') ?? '')
         .split(',')
         .map((item) => item.trim())
         .filter(Boolean),
-    [watch('amenities')],
+      isActive: Boolean(watch('isActive')),
+      createdBy: initialVenue?.createdBy ?? null,
+      createdAt: initialVenue?.createdAt ?? new Date().toISOString(),
+      updatedAt: initialVenue?.updatedAt ?? new Date().toISOString(),
+    }),
+    [imageUrl, initialVenue?.createdAt, initialVenue?.createdBy, initialVenue?.id, initialVenue?.updatedAt, watch],
   );
 
   const submitForm = async (values: VenueFormValues): Promise<void> => {
@@ -189,26 +202,8 @@ function VenueForm({ mode, initialVenue, submitting, onSubmit }: VenueFormProps)
               <Eye className="h-4 w-4 text-brand-700" />
               Live Preview
             </div>
-            <div className="mt-4 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-50">
-              <div className="flex h-48 items-center justify-center bg-slate-100">
-                {imageUrl ? <img src={imageUrl} alt="Venue preview" className="h-full w-full object-cover" /> : <ImageIcon className="h-10 w-10 text-slate-400" />}
-              </div>
-              <div className="space-y-3 p-4">
-                <p className="text-lg font-semibold text-slate-950">{watch('name') || 'Venue name preview'}</p>
-                <p className="text-sm text-slate-500">{watch('location') || 'Location preview'}</p>
-                <p className="text-sm text-slate-600">{watch('description') || 'A short description will appear here.'}</p>
-              </div>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {amenitiesPreview.length > 0 ? (
-                amenitiesPreview.map((amenity) => (
-                  <span key={amenity} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                    {amenity}
-                  </span>
-                ))
-              ) : (
-                <span className="text-xs text-slate-500">No facilities added</span>
-              )}
+            <div className="mt-4">
+              <VenueCard venue={previewVenue} preview />
             </div>
           </div>
 

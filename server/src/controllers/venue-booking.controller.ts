@@ -1,6 +1,5 @@
 import type { Response } from 'express';
 import {
-  cancelBooking,
   checkAvailability,
   createBooking,
   getBookingById,
@@ -48,7 +47,7 @@ export async function getVenueBookingsController(
   response: Response<ApiResponse<PaginatedVenueBookingsData>>,
 ): Promise<void> {
   const query = venueBookingListQuerySchema.parse(request.query);
-  const bookings = await getBookings(query);
+  const bookings = await getBookings(query, request.user!);
   sendSuccess(response, 200, 'Venue bookings fetched successfully', bookings);
 }
 
@@ -57,15 +56,6 @@ export async function getVenueBookingController(
   response: Response<ApiResponse<VenueBookingDto>>,
 ): Promise<void> {
   const { id } = venueBookingIdParamSchema.parse(request.params);
-  const booking = await getBookingById(id);
+  const booking = await getBookingById(id, request.user!);
   sendSuccess(response, 200, 'Venue booking fetched successfully', booking);
-}
-
-export async function cancelVenueBookingController(
-  request: AuthenticatedRequest,
-  response: Response<ApiResponse<VenueBookingDto>>,
-): Promise<void> {
-  const { id } = venueBookingIdParamSchema.parse(request.params);
-  const booking = await cancelBooking(id);
-  sendSuccess(response, 200, 'Venue booking cancelled successfully', booking);
 }

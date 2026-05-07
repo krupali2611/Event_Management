@@ -31,6 +31,7 @@ export const checkAvailabilityBodySchema = z.object({
   venueId: z.string().trim().min(1, 'Venue id is required'),
   startDate: z.string().trim().min(1, 'Start date is required'),
   endDate: z.string().trim().min(1, 'End date is required'),
+  eventId: optionalIdString,
 });
 
 export const venueBookingListQuerySchema = z.object({
