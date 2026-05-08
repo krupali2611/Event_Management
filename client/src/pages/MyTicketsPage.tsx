@@ -32,7 +32,7 @@ function formatDate(date: string): string {
 }
 
 function canCancelTicket(ticket: TicketBookingItem): boolean {
-  return ticket.bookingStatus !== 'cancelled' && ticket.event.lifecycleStatus === 'UPCOMING';
+  return ticket.bookingStatus !== 'cancelled' && ticket.bookingStatus !== 'used' && ticket.event.lifecycleStatus === 'UPCOMING';
 }
 
 function MyTicketsPage() {

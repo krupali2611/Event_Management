@@ -3,6 +3,7 @@ import authRouter from './auth.routes';
 import eventRouter from './event.routes';
 import healthRouter from './healthRoutes';
 import ticketRouter from '../modules/tickets/ticket.routes';
+import notificationRouter from '../modules/notification/notification.routes';
 import userRouter from './user.routes';
 import venueBookingRouter from './venue-booking.routes';
 import venueRouter from './venue.routes';
@@ -14,6 +15,7 @@ apiRouter.use('/auth', authRouter);
 apiRouter.use('/users', userRouter);
 apiRouter.use('/events', eventRouter);
 apiRouter.use('/tickets', ticketRouter);
+apiRouter.use('/notifications', notificationRouter);
 apiRouter.use('/venues', venueRouter);
 apiRouter.use('/venue-bookings', venueBookingRouter);
 

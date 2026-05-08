@@ -30,7 +30,20 @@ enum BOOKING_STATUS {
   PENDING
   CONFIRMED
   CANCELLED
+  USED
   REFUNDED
+}
+
+enum NOTIFICATION_TYPE {
+  USER_REGISTERED
+  EVENT_UPDATED
+  EVENT_CANCELLED
+  TICKET_GENERATED
+  TICKET_STATUS_CHANGED
+  EVENT_REMINDER_24H
+  EVENT_REMINDER_1H
+  NEW_EVENT_CREATED
+  EVENT_SEATS_FULL
 }
 
 enum PAYMENT_STATUS {
@@ -53,6 +66,8 @@ model User {
   events         Event[]         @relation("OrganizerEvents")
   registrations  Registration[]
   ticketBookings TicketBooking[]
+  notifications  Notification[]
+  notificationDispatchLogs NotificationDispatchLog[]
   venues         Venue[]         @relation("VenueCreator")
   venueBookings  VenueBooking[]  @relation("VenueBookingCreator")
 }
@@ -182,4 +197,33 @@ model VenueBooking {
   @@index([status])
   @@index([eventId])
   @@index([createdById])
+}
+
+model Notification {
+  id        String            @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      NOTIFICATION_TYPE
+  isRead    Boolean           @default(false)
+  link      String?
+  metadata  Json?
+  createdAt DateTime          @default(now())
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+  @@index([userId, type, createdAt])
+}
+
+model NotificationDispatchLog {
+  id         String            @id @default(cuid())
+  userId     String
+  type       NOTIFICATION_TYPE
+  channel    String
+  dedupeKey  String
+  createdAt  DateTime          @default(now())
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channel, dedupeKey])
+  @@index([type, createdAt])
 }

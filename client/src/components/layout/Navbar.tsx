@@ -1,6 +1,7 @@
-import { Bell, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProfileDropdown from '@/components/layout/ProfileDropdown';
+import NotificationBell from '@/components/notifications/NotificationBell';
 import { useAuth } from '@/hooks/useAuth';
 
 interface NavbarProps {
@@ -24,13 +25,7 @@ function Navbar({ title, subtitle, theme }: NavbarProps) {
         <div className="flex items-center gap-3">
           {isAuthenticated ? (
             <>
-              <button
-                type="button"
-                className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl transition ${isDark ? 'bg-slate-900 text-slate-300 hover:bg-slate-800' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                aria-label="Notifications"
-              >
-                <Bell className="h-4 w-4" />
-              </button>
+              <NotificationBell theme={theme} />
               <ProfileDropdown theme={theme} />
               <button
                 type="button"

@@ -1,7 +1,7 @@
 import type { ApiResponse } from '@/types/api';
 import type { EventLifecycleStatus, EventStatus, EventVenueSummary } from '@/types/event.types';
 
-export type TicketBookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'refunded';
+export type TicketBookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'used' | 'refunded';
 export type TicketPaymentStatus = 'pending' | 'paid' | 'failed' | 'refun_pending' | 'refunded';
 
 export interface TicketEventSummary {

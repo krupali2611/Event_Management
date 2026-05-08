@@ -10,6 +10,7 @@ import {
   getTicketDashboardSummaryController,
   getMyTicketBookingsController,
   getTicketBookingController,
+  updateTicketBookingStatusController,
 } from './ticket.controller';
 
 const ticketRouter = Router();
@@ -19,6 +20,7 @@ ticketRouter.use(authenticate);
 ticketRouter.get('/dashboard/summary', requireRole('ORGANIZER', 'ADMIN', 'SUPER_ADMIN'), asyncHandler(getTicketDashboardSummaryController));
 ticketRouter.get('/event/:eventId/stats', requireRole('ORGANIZER', 'ADMIN', 'SUPER_ADMIN'), asyncHandler(getEventTicketStatsController));
 ticketRouter.get('/event/:eventId', requireRole('ORGANIZER', 'ADMIN', 'SUPER_ADMIN'), asyncHandler(getEventTicketBookingsController));
+ticketRouter.patch('/:id/status', requireRole('ORGANIZER', 'ADMIN', 'SUPER_ADMIN'), asyncHandler(updateTicketBookingStatusController));
 
 ticketRouter.use(requireRole('ATTENDEE'));
 ticketRouter.post('/book', asyncHandler(createTicketBookingController));

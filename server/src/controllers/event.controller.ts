@@ -102,7 +102,7 @@ export async function createEventController(
     event = await createEvent({
       ...payload,
       organizerId: request.user!.id,
-    });
+    }, request.user!);
   } catch (error) {
     await cleanupUploadedImages([uploadedImages.bannerImagePublicId, ...(uploadedImages.galleryImagePublicIds ?? [])]);
     throw error;

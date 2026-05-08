@@ -10,13 +10,14 @@ import {
   cancelTicketBooking,
   getMyTicketBookings,
   getTicketBookingById,
+  updateTicketBookingStatus,
   type TicketBookingDto,
   type TicketDashboardSummaryDto,
   type TicketEventAttendeeListData,
   type TicketEventStatsDto,
   type TicketBookingListData,
 } from './ticket.service';
-import { createTicketBookingBodySchema, ticketBookingIdParamSchema, ticketEventBookingsQuerySchema, ticketEventIdParamSchema } from './ticket.validation';
+import { createTicketBookingBodySchema, ticketBookingIdParamSchema, ticketEventBookingsQuerySchema, ticketEventIdParamSchema, updateTicketStatusBodySchema } from './ticket.validation';
 
 export async function createTicketBookingController(
   request: AuthenticatedRequest,
@@ -78,4 +79,14 @@ export async function getTicketDashboardSummaryController(
 ): Promise<void> {
   const summary = await getTicketDashboardSummary(request.user!);
   sendSuccess(response, 200, 'Ticket dashboard summary fetched successfully', summary);
+}
+
+export async function updateTicketBookingStatusController(
+  request: AuthenticatedRequest,
+  response: Response<ApiResponse<TicketBookingDto>>,
+): Promise<void> {
+  const { id } = ticketBookingIdParamSchema.parse(request.params);
+  const payload = updateTicketStatusBodySchema.parse(request.body);
+  const booking = await updateTicketBookingStatus(id, payload.status, request.user!);
+  sendSuccess(response, 200, 'Ticket status updated successfully', booking);
 }

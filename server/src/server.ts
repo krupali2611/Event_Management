@@ -2,6 +2,7 @@ import app from './app';
 import { env } from './config/env';
 import { prisma } from './config/prisma';
 import { USER_ROLE } from '@prisma/client';
+import { startNotificationCronJobs } from './modules/notification/cron.service';
 import { hashPassword } from './utils/password';
 
 async function ensureSuperAdmin(): Promise<void> {
@@ -46,6 +47,7 @@ async function ensureSuperAdmin(): Promise<void> {
 
 void ensureSuperAdmin()
   .then(() => {
+    startNotificationCronJobs();
     app.listen(env.port, () => {
       console.log(`Server running on http://localhost:${env.port}`);
     });

@@ -7,6 +7,10 @@ export interface EnvConfig {
   cloudinaryCloudName: string;
   cloudinaryApiKey: string;
   cloudinaryApiSecret: string;
+  brevoApiKey?: string;
+  brevoSenderEmail?: string;
+  brevoSenderName: string;
+  clientUrl: string;
   superAdminEmail?: string;
   superAdminPassword?: string;
   superAdminName: string;

@@ -1,6 +1,12 @@
-import { BOOKING_STATUS, Prisma, type Event, type PrismaClient, type VenueBooking } from '@prisma/client';
+import { Prisma, type Event, type PrismaClient, type VenueBooking } from '@prisma/client';
+import {
+  sendEventCancelledNotifications,
+  sendEventUpdatedNotifications,
+  sendNewEventCreatedNotificationToAdmins,
+} from '../modules/notification/notification.service';
 import { prisma } from '../config/prisma';
 import { cancelBookingsForEventInTransaction, createBookingInTransaction } from './booking.service';
+import { COUNTED_BOOKING_STATUSES } from '../modules/tickets/ticket.constants';
 import type { AuthenticatedUser } from '../types/auth.types';
 import type {
   CreateEventInput,
@@ -15,6 +21,7 @@ import type {
 import { dateTimeRangesOverlap, resolveDateTimeBoundary } from '../utils/dateUtils';
 import { deleteFromCloudinary } from '../utils/deleteFromCloudinary';
 import { AppError } from '../utils/response';
+import { listEventChangeLabels } from '../modules/notification/notification.utils';
 
 type EventRecord = Pick<
   Event,
@@ -41,6 +48,17 @@ type EventSchedule = {
   endDate: Date;
   startTime: string | null;
   endTime: string | null;
+};
+
+type EventNotificationContext = {
+  id: string;
+  title: string;
+  startDate: Date;
+  endDate: Date;
+  startTime: string | null;
+  endTime: string | null;
+  venue: { id: string; name: string; location: string } | null;
+  organizer: { id: string; name: string; email: string };
 };
 
 function getEventDelegate(executor: PrismaExecutor = prisma) {
@@ -652,7 +670,7 @@ async function getSoldTicketsByEventIds(eventIds: string[], executor: PrismaExec
     by: ['eventId'],
     where: {
       eventId: { in: eventIds },
-      bookingStatus: BOOKING_STATUS.CONFIRMED,
+      bookingStatus: { in: [...COUNTED_BOOKING_STATUSES] },
     },
     _sum: {
       quantity: true,
@@ -711,6 +729,40 @@ async function ensureEventExists(id: string): Promise<EventRecord> {
   return event;
 }
 
+async function getEventNotificationContext(id: string, executor: PrismaExecutor = prisma): Promise<EventNotificationContext> {
+  const event = await getEventDelegate(executor).findUnique({
+    where: { id },
+    select: {
+      id: true,
+      title: true,
+      startDate: true,
+      endDate: true,
+      startTime: true,
+      endTime: true,
+      venue: {
+        select: {
+          id: true,
+          name: true,
+          location: true,
+        },
+      },
+      organizer: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  if (!event) {
+    throw new AppError('Event not found', 404);
+  }
+
+  return event;
+}
+
 async function ensureEventAccess(id: string, user: AuthenticatedUser): Promise<EventRecord> {
   const event = await ensureEventExists(id);
 
@@ -748,7 +800,7 @@ async function validateVenueCapacity(venueId: string | null | undefined, attende
   }
 }
 
-export async function createEvent(payload: CreateEventInput): Promise<EventDto> {
+export async function createEvent(payload: CreateEventInput, actor: AuthenticatedUser): Promise<EventDto> {
   const eventDelegate = getEventDelegate();
   const normalizedPayload = normalizeEventPayload(payload);
   const startDate = new Date(normalizedPayload.startDate);
@@ -813,6 +865,10 @@ export async function createEvent(payload: CreateEventInput): Promise<EventDto> 
 
   if (!event) {
     throw new AppError('Event not found after creation', 500);
+  }
+
+  if (actor.role === 'ORGANIZER') {
+    await sendNewEventCreatedNotificationToAdmins(await getEventNotificationContext(createdEvent.id));
   }
 
   return toEventDto((await attachTicketMetrics([event]))[0]!);
@@ -967,6 +1023,7 @@ export async function getPublicEventById(id: string): Promise<EventDto> {
 
 export async function updateEvent(id: string, payload: UpdateEventInput, user: AuthenticatedUser): Promise<EventDto> {
   const existingEvent = await ensureEventAccess(id, user);
+  const previousNotificationContext = await getEventNotificationContext(id);
   assertEventIsMutable(existingEvent);
   assertEventHasNotStarted(existingEvent);
   const normalizedPayload = normalizeEventPayload(payload);
@@ -1025,6 +1082,27 @@ export async function updateEvent(id: string, payload: UpdateEventInput, user: A
     ...(normalizedPayload.bannerImage !== undefined ? { bannerImage: nextBannerImage, bannerImagePublicId: nextBannerImagePublicId } : {}),
     ...(normalizedPayload.galleryImages !== undefined ? { galleryImages: nextGalleryImages, galleryImagePublicIds: nextGalleryImagePublicIds } : {}),
   };
+  const shouldNotifyAttendees =
+    existingEvent.status === 'PUBLISHED' &&
+    listEventChangeLabels({
+      previous: {
+        startDate: existingEvent.startDate,
+        endDate: existingEvent.endDate,
+        startTime: existingEvent.startTime,
+        endTime: existingEvent.endTime,
+        venueId: existingEvent.venueId,
+      },
+      next: {
+        startDate: nextEventState.startDate,
+        endDate: nextEventState.endDate,
+        startTime: nextEventState.startTime,
+        endTime: nextEventState.endTime,
+        venueId: nextEventState.venueId,
+      },
+    }).length > 0;
+  const shouldNotifyCancellation =
+    existingEvent.status === 'PUBLISHED' &&
+    normalizedPayload.status === 'CANCELLED';
 
   await withEventSchemaRetry(() =>
     prisma.$transaction(async (transaction) => {
@@ -1075,6 +1153,23 @@ export async function updateEvent(id: string, payload: UpdateEventInput, user: A
     await Promise.all(removedGalleryImagePublicIds.map((publicId) => deleteFromCloudinary(publicId)));
   }
 
+  if (shouldNotifyAttendees && !shouldNotifyCancellation) {
+    await sendEventUpdatedNotifications({
+      previous: {
+        startDate: previousNotificationContext.startDate,
+        endDate: previousNotificationContext.endDate,
+        startTime: previousNotificationContext.startTime,
+        endTime: previousNotificationContext.endTime,
+        venue: previousNotificationContext.venue,
+      },
+      next: await getEventNotificationContext(id),
+    });
+  }
+
+  if (shouldNotifyCancellation) {
+    await sendEventCancelledNotifications(await getEventNotificationContext(id));
+  }
+
   return getEventById(id, user);
 }
 
@@ -1083,6 +1178,9 @@ export async function updateEventStatus(id: string, payload: UpdateEventStatusIn
   await prisma.$transaction(async (transaction) => {
     await updateEventStatusInTransaction(transaction, id, payload, user, existingEvent);
   });
+  if (existingEvent.status === 'PUBLISHED' && payload.status === 'CANCELLED') {
+    await sendEventCancelledNotifications(await getEventNotificationContext(id));
+  }
   return getEventById(id, user);
 }
 
@@ -1132,6 +1230,7 @@ async function updateEventStatusInTransaction(
       id: true,
     },
   });
+
 }
 
 export async function deleteEvent(id: string, user: AuthenticatedUser): Promise<void> {

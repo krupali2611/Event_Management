@@ -1,7 +1,7 @@
 import type { BOOKING_STATUS, Event, Prisma, TicketBooking } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { getEventStatus } from '../../services/event.service';
-import { ticketBookingDetailInclude, TICKET_NUMBER_LENGTH, TICKET_NUMBER_PREFIX } from './ticket.constants';
+import { COUNTED_BOOKING_STATUSES, ticketBookingDetailInclude, TICKET_NUMBER_LENGTH, TICKET_NUMBER_PREFIX } from './ticket.constants';
 
 type EventLifecycleSnapshot = Pick<Event, 'status' | 'startDate' | 'endDate' | 'startTime' | 'endTime'>;
 
@@ -36,11 +36,11 @@ export function getRemainingSeats(attendeeLimit: number, soldTickets: number): n
 }
 
 export function calculateRevenue(bookings: Array<Pick<TicketBooking, 'bookingStatus' | 'totalAmount'>>): number {
-  return bookings.reduce((total, booking) => (booking.bookingStatus === 'CONFIRMED' ? total + booking.totalAmount : total), 0);
+  return bookings.reduce((total, booking) => (COUNTED_BOOKING_STATUSES.includes(booking.bookingStatus) ? total + booking.totalAmount : total), 0);
 }
 
 export function isBookingCountedAsSold(status: BOOKING_STATUS): boolean {
-  return status === 'CONFIRMED';
+  return COUNTED_BOOKING_STATUSES.includes(status);
 }
 
 export function getBookingStatistics(bookings: Array<Pick<TicketBooking, 'bookingStatus' | 'quantity' | 'totalAmount'>>): {
@@ -58,7 +58,7 @@ export function getBookingStatistics(bookings: Array<Pick<TicketBooking, 'bookin
         summary.cancelledBookings += 1;
       }
 
-      if (booking.bookingStatus === 'CONFIRMED') {
+      if (COUNTED_BOOKING_STATUSES.includes(booking.bookingStatus)) {
         summary.confirmedBookings += 1;
         summary.totalTicketsSold += booking.quantity;
         summary.totalRevenue += booking.totalAmount;

@@ -31,6 +31,7 @@ const EventDetailPage = lazy(() => import('@/pages/organizer/EventDetailPage'));
 const EventAttendeesPage = lazy(() => import('@/pages/organizer/EventAttendeesPage'));
 const AttendeePage = lazy(() => import('@/pages/AttendeePage'));
 const MyTicketsPage = lazy(() => import('@/pages/MyTicketsPage'));
+const NotificationsPage = lazy(() => import('@/pages/NotificationsPage'));
 
 function AppRoutes() {
   return (
@@ -87,6 +88,10 @@ function AppRoutes() {
           <Route element={<ProtectedRoute allowedRoles={['ATTENDEE']} />}>
             <Route path="my-tickets" element={<MyTicketsPage />} />
           </Route>
+        </Route>
+
+        <Route element={<ProtectedRoute allowedRoles={['ATTENDEE', 'ORGANIZER', 'ADMIN', 'SUPER_ADMIN']} />}>
+          <Route path="notifications" element={<NotificationsPage />} />
         </Route>
 
         <Route element={<MainLayout />}>

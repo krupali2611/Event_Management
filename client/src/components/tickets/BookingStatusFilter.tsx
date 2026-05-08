@@ -24,6 +24,7 @@ function BookingStatusFilter({
         <option value="CONFIRMED">Confirmed</option>
         <option value="PENDING">Pending</option>
         <option value="CANCELLED">Cancelled</option>
+        <option value="USED">Used</option>
         <option value="REFUNDED">Refunded</option>
       </select>
       <select

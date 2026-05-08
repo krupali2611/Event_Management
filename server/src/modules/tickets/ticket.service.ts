@@ -9,12 +9,17 @@ import { prisma } from '../../config/prisma';
 import type { AuthenticatedUser } from '../../types/auth.types';
 import { AppError } from '../../utils/response';
 import {
-  CONFIRMED_BOOKING_STATUS,
+  COUNTED_BOOKING_STATUSES,
   MAX_TICKET_NUMBER_RETRIES,
   SERIALIZABLE_RETRY_DELAY_MS,
   SERIALIZABLE_RETRY_LIMIT,
   ticketBookingDetailInclude,
 } from './ticket.constants';
+import {
+  sendEventSeatsFullNotification,
+  sendTicketGeneratedNotification,
+  sendTicketStatusChangedNotification,
+} from '../notification/notification.service';
 import {
   assertEventCanAcceptBookings,
   calculateRevenue,
@@ -35,7 +40,7 @@ export interface TicketBookingDto {
   userId: string;
   quantity: number;
   totalAmount: number;
-  bookingStatus: 'pending' | 'confirmed' | 'cancelled' | 'refunded';
+  bookingStatus: 'pending' | 'confirmed' | 'cancelled' | 'used' | 'refunded';
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refun_pending' | 'refunded';
   ticketNumber: string;
   qrCode: string | null;
@@ -79,7 +84,7 @@ export interface TicketEventAttendeeItemDto {
   attendeeEmail: string;
   quantity: number;
   totalAmount: number;
-  bookingStatus: 'pending' | 'confirmed' | 'cancelled' | 'refunded';
+  bookingStatus: 'pending' | 'confirmed' | 'cancelled' | 'used' | 'refunded';
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refun_pending' | 'refunded';
   bookedAt: Date;
   ticketNumber: string;
@@ -151,7 +156,7 @@ type TicketAnalyticsQuery = {
   page: number;
   limit: number;
   search?: string;
-  bookingStatus?: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'REFUNDED';
+  bookingStatus?: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'USED' | 'REFUNDED';
   paymentStatus?: 'PENDING' | 'PAID' | 'FAILED' | 'REFUN_PENDING' | 'REFUNDED';
 };
 
@@ -279,7 +284,7 @@ async function getConfirmedTicketsAggregate(eventId: string, executor: PrismaExe
   const aggregate = await getTicketBookingDelegate(executor).aggregate({
     where: {
       eventId,
-      bookingStatus: CONFIRMED_BOOKING_STATUS,
+      bookingStatus: { in: [...COUNTED_BOOKING_STATUSES] },
     },
     _sum: {
       quantity: true,
@@ -301,7 +306,7 @@ async function getSoldTicketsByEventIds(
     by: ['eventId'],
     where: {
       eventId: { in: eventIds },
-      bookingStatus: CONFIRMED_BOOKING_STATUS,
+      bookingStatus: { in: [...COUNTED_BOOKING_STATUSES] },
     },
     _sum: {
       quantity: true,
@@ -444,6 +449,66 @@ export async function createTicketBooking(
   });
 
   const soldTickets = await getConfirmedTicketsAggregate(booking.eventId);
+  await sendTicketGeneratedNotification({
+    booking: {
+      id: booking.id,
+      ticketNumber: booking.ticketNumber,
+      user: booking.user,
+      event: {
+        id: booking.event.id,
+        title: booking.event.title,
+        startDate: booking.event.startDate,
+        endDate: booking.event.endDate,
+        startTime: booking.event.startTime,
+        endTime: booking.event.endTime,
+        venue: booking.event.venue
+          ? {
+              id: booking.event.venue.id,
+              name: booking.event.venue.name,
+              location: booking.event.venue.location,
+            }
+          : null,
+        organizer: {
+          id: booking.event.organizer.id,
+          name: booking.event.organizer.name,
+          email: booking.event.organizer.email,
+        },
+      },
+    },
+  });
+
+  if (soldTickets >= booking.event.attendeeLimit) {
+    const organizer = await getEventDelegate().findUnique({
+      where: { id: booking.eventId },
+      select: {
+        id: true,
+        title: true,
+        startDate: true,
+        endDate: true,
+        startTime: true,
+        endTime: true,
+        venue: {
+          select: {
+            id: true,
+            name: true,
+            location: true,
+          },
+        },
+        organizer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (organizer) {
+      await sendEventSeatsFullNotification({ event: organizer });
+    }
+  }
+
   return toTicketBookingDto(booking, soldTickets);
 }
 
@@ -488,6 +553,10 @@ export async function cancelTicketBooking(id: string, user: AuthenticatedUser): 
       throw new AppError('Ticket booking is already cancelled', 400);
     }
 
+    if (existingBooking.bookingStatus === BOOKING_STATUS.USED) {
+      throw new AppError('Used tickets cannot be cancelled', 400);
+    }
+
     if (getEventStatus(existingBooking.event) !== 'UPCOMING') {
       throw new AppError('Tickets cannot be cancelled after the event has started', 400);
     }
@@ -503,7 +572,97 @@ export async function cancelTicketBooking(id: string, user: AuthenticatedUser): 
   });
 
   const soldTickets = await getConfirmedTicketsAggregate(booking.eventId);
+  await sendTicketStatusChangedNotification({
+    booking: {
+      id: booking.id,
+      ticketNumber: booking.ticketNumber,
+      bookingStatus: booking.bookingStatus,
+      user: booking.user,
+      event: {
+        id: booking.event.id,
+        title: booking.event.title,
+        startDate: booking.event.startDate,
+        endDate: booking.event.endDate,
+        startTime: booking.event.startTime,
+        endTime: booking.event.endTime,
+        venue: booking.event.venue
+          ? {
+              id: booking.event.venue.id,
+              name: booking.event.venue.name,
+              location: booking.event.venue.location,
+            }
+          : null,
+        organizer: {
+          id: booking.event.organizer.id,
+          name: booking.event.organizer.name,
+          email: booking.event.organizer.email,
+        },
+      },
+    },
+  });
   return toTicketBookingDto(booking, soldTickets);
+}
+
+export async function updateTicketBookingStatus(
+  id: string,
+  status: 'CONFIRMED' | 'CANCELLED' | 'USED',
+  user: AuthenticatedUser,
+): Promise<TicketBookingDto> {
+  ensureAnalyticsAccess(user);
+
+  const updatedBooking = await runSerializableTransaction(async (transaction) => {
+    const booking = await ensureBookingExists(id, transaction);
+    await ensureEventAnalyticsAccess(booking.eventId, user, transaction);
+
+    if (booking.bookingStatus === status) {
+      return booking;
+    }
+
+    if (status === BOOKING_STATUS.CANCELLED && getEventStatus(booking.event) !== 'UPCOMING') {
+      throw new AppError('Only upcoming event tickets can be cancelled', 400);
+    }
+
+    return getTicketBookingDelegate(transaction).update({
+      where: { id },
+      data: {
+        bookingStatus: status,
+        cancelledAt: status === BOOKING_STATUS.CANCELLED ? new Date() : null,
+      },
+      include: ticketBookingDetailInclude,
+    });
+  });
+
+  const soldTickets = await getConfirmedTicketsAggregate(updatedBooking.eventId);
+  await sendTicketStatusChangedNotification({
+    booking: {
+      id: updatedBooking.id,
+      ticketNumber: updatedBooking.ticketNumber,
+      bookingStatus: updatedBooking.bookingStatus,
+      user: updatedBooking.user,
+      event: {
+        id: updatedBooking.event.id,
+        title: updatedBooking.event.title,
+        startDate: updatedBooking.event.startDate,
+        endDate: updatedBooking.event.endDate,
+        startTime: updatedBooking.event.startTime,
+        endTime: updatedBooking.event.endTime,
+        venue: updatedBooking.event.venue
+          ? {
+              id: updatedBooking.event.venue.id,
+              name: updatedBooking.event.venue.name,
+              location: updatedBooking.event.venue.location,
+            }
+          : null,
+        organizer: {
+          id: updatedBooking.event.organizer.id,
+          name: updatedBooking.event.organizer.name,
+          email: updatedBooking.event.organizer.email,
+        },
+      },
+    },
+  });
+
+  return toTicketBookingDto(updatedBooking, soldTickets);
 }
 
 export async function getEventTicketBookings(
@@ -645,7 +804,7 @@ export async function getTicketDashboardSummary(user: AuthenticatedUser): Promis
   const soldTicketsByEventId = new Map<string, number>();
 
   for (const booking of bookings) {
-    if (booking.bookingStatus !== 'CONFIRMED') {
+    if (!COUNTED_BOOKING_STATUSES.includes(booking.bookingStatus)) {
       continue;
     }
 

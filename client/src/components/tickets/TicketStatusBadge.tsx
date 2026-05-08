@@ -14,6 +14,8 @@ function getBadgeColor(status: TicketStatusBadgeProps['status'], kind: TicketSta
       case 'cancelled':
       case 'refunded':
         return 'red';
+      case 'used':
+        return 'slate';
       case 'pending':
       default:
         return 'amber';
