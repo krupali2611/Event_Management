@@ -1,4 +1,4 @@
-import { Prisma, type Event, type PrismaClient, type VenueBooking } from '@prisma/client';
+import { BOOKING_STATUS, Prisma, type Event, type PrismaClient, type VenueBooking } from '@prisma/client';
 import { prisma } from '../config/prisma';
 import { cancelBookingsForEventInTransaction, createBookingInTransaction } from './booking.service';
 import type { AuthenticatedUser } from '../types/auth.types';
@@ -13,6 +13,7 @@ import type {
   UpdateEventStatusInput,
 } from '../types/event.types';
 import { dateTimeRangesOverlap, resolveDateTimeBoundary } from '../utils/dateUtils';
+import { deleteFromCloudinary } from '../utils/deleteFromCloudinary';
 import { AppError } from '../utils/response';
 
 type EventRecord = Pick<
@@ -20,10 +21,17 @@ type EventRecord = Pick<
   'id' | 'title' | 'description' | 'category' | 'startDate' | 'endDate' | 'startTime' | 'endTime' | 'attendeeLimit' | 'venueId' | 'organizerId' | 'status' | 'createdAt' | 'updatedAt'
 > & {
   bannerImage?: string | null;
+  bannerImagePublicId?: string | null;
   galleryImages?: string[];
+  galleryImagePublicIds?: string[];
   ticketPrice?: number;
   venue?: { id: string; name: string; location: string; capacity: number; isActive: boolean } | null;
   organizer?: { id: string; name: string; email: string } | null;
+};
+
+type EventWithTicketMetrics = EventRecord & {
+  soldTickets: number;
+  remainingSeats: number;
 };
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
@@ -59,6 +67,14 @@ function getVenueDelegate(executor: PrismaExecutor = prisma) {
   return executor.venue;
 }
 
+function getTicketBookingDelegate(executor: PrismaExecutor = prisma) {
+  if (!('ticketBooking' in executor) || !executor.ticketBooking) {
+    throw new AppError('TicketBooking model is not available in the Prisma client. Run Prisma generate and restart the server.', 500);
+  }
+
+  return executor.ticketBooking;
+}
+
 function getEventModelFieldNames(): Set<string> {
   const prismaMeta = Prisma as unknown as {
     dmmf?: {
@@ -77,6 +93,10 @@ function getEventModelFieldNames(): Set<string> {
 
 const eventModelFields = getEventModelFieldNames();
 let eventDatabaseFieldNamesPromise: Promise<Set<string>> | null = null;
+
+function resetEventDatabaseFieldNamesCache(): void {
+  eventDatabaseFieldNamesPromise = null;
+}
 
 function supportsEventField(fieldName: string): boolean {
   return eventModelFields.has(fieldName);
@@ -106,18 +126,149 @@ async function supportsEventDatabaseField(fieldName: string): Promise<boolean> {
   return fieldNames.has(fieldName);
 }
 
+function isMissingEventColumnError(error: unknown, fieldName: string): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return error.message.includes(`The column \`Event.${fieldName}\` does not exist in the current database.`);
+}
+
+async function withEventSchemaRetry<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (
+      !isMissingEventColumnError(error, 'bannerImagePublicId') &&
+      !isMissingEventColumnError(error, 'galleryImagePublicIds')
+    ) {
+      throw error;
+    }
+
+    resetEventDatabaseFieldNamesCache();
+    return operation();
+  }
+}
+
+function toSqlTextArray(values: string[]): Prisma.Sql {
+  if (values.length === 0) {
+    return Prisma.sql`ARRAY[]::TEXT[]`;
+  }
+
+  return Prisma.sql`ARRAY[${Prisma.join(values)}]::TEXT[]`;
+}
+
+async function createEventRecord(
+  executor: Prisma.TransactionClient,
+  payload: {
+    title: string;
+    description: string | null;
+    bannerImage: string | null;
+    galleryImages: string[];
+    category: string;
+    ticketPrice: number;
+    startDate: Date;
+    endDate: Date;
+    startTime: string | null;
+    endTime: string | null;
+    attendeeLimit: number;
+    venueId: string | null;
+    organizerId: string;
+    status: EventStatus;
+  },
+  optionalImageData: Record<string, string | string[] | null>,
+  optionalScalarData: Record<string, number>,
+): Promise<{ id: string; status: EventStatus }> {
+  const hasBannerImagePublicId = await supportsEventDatabaseField('bannerImagePublicId');
+  const hasGalleryImagePublicIds = await supportsEventDatabaseField('galleryImagePublicIds');
+
+  if (hasBannerImagePublicId && hasGalleryImagePublicIds) {
+    return executor.event.create({
+      data: {
+        title: payload.title,
+        description: payload.description,
+        ...optionalImageData,
+        category: payload.category,
+        ...optionalScalarData,
+        startDate: payload.startDate,
+        endDate: payload.endDate,
+        startTime: payload.startTime,
+        endTime: payload.endTime,
+        attendeeLimit: payload.attendeeLimit,
+        venueId: payload.venueId,
+        organizerId: payload.organizerId,
+        status: payload.status,
+      },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+  }
+
+  const insertedRows = await executor.$queryRaw<Array<{ id: string; status: EventStatus }>>`
+    INSERT INTO "Event" (
+      "title",
+      "description",
+      "bannerImage",
+      "galleryImages",
+      "category",
+      "ticketPrice",
+      "startDate",
+      "endDate",
+      "startTime",
+      "endTime",
+      "attendeeLimit",
+      "venueId",
+      "organizerId",
+      "status"
+    )
+    VALUES (
+      ${payload.title},
+      ${payload.description},
+      ${payload.bannerImage},
+      ${toSqlTextArray(payload.galleryImages)},
+      ${payload.category},
+      ${payload.ticketPrice},
+      ${payload.startDate},
+      ${payload.endDate},
+      ${payload.startTime},
+      ${payload.endTime},
+      ${payload.attendeeLimit},
+      ${payload.venueId},
+      ${payload.organizerId},
+      ${payload.status}::"EVENT_STATUS"
+    )
+    RETURNING "id", "status"
+  `;
+
+  const insertedEvent = insertedRows[0];
+
+  if (!insertedEvent) {
+    throw new AppError('Event could not be created', 500);
+  }
+
+  return insertedEvent;
+}
+
 async function getOptionalEventImageData(input: {
   bannerImage?: string | null;
+  bannerImagePublicId?: string | null;
   galleryImages?: string[];
+  galleryImagePublicIds?: string[];
 }): Promise<Record<string, string | string[] | null>> {
-  const [hasBannerImage, hasGalleryImages] = await Promise.all([
+  const [hasBannerImage, hasBannerImagePublicId, hasGalleryImages, hasGalleryImagePublicIds] = await Promise.all([
     supportsEventDatabaseField('bannerImage'),
+    supportsEventDatabaseField('bannerImagePublicId'),
     supportsEventDatabaseField('galleryImages'),
+    supportsEventDatabaseField('galleryImagePublicIds'),
   ]);
 
   return {
     ...(hasBannerImage && input.bannerImage !== undefined ? { bannerImage: input.bannerImage } : {}),
+    ...(hasBannerImagePublicId && input.bannerImagePublicId !== undefined ? { bannerImagePublicId: input.bannerImagePublicId } : {}),
     ...(hasGalleryImages && input.galleryImages !== undefined ? { galleryImages: input.galleryImages } : {}),
+    ...(hasGalleryImagePublicIds && input.galleryImagePublicIds !== undefined ? { galleryImagePublicIds: input.galleryImagePublicIds } : {}),
   };
 }
 
@@ -132,9 +283,11 @@ async function getOptionalEventScalarData(input: {
 }
 
 async function getEventSelect(includeRelations = false): Promise<Record<string, unknown>> {
-  const [hasBannerImage, hasGalleryImages, hasTicketPrice] = await Promise.all([
+  const [hasBannerImage, hasBannerImagePublicId, hasGalleryImages, hasGalleryImagePublicIds, hasTicketPrice] = await Promise.all([
     supportsEventDatabaseField('bannerImage'),
+    supportsEventDatabaseField('bannerImagePublicId'),
     supportsEventDatabaseField('galleryImages'),
+    supportsEventDatabaseField('galleryImagePublicIds'),
     supportsEventDatabaseField('ticketPrice'),
   ]);
 
@@ -154,7 +307,9 @@ async function getEventSelect(includeRelations = false): Promise<Record<string, 
     createdAt: true,
     updatedAt: true,
     ...(hasBannerImage ? { bannerImage: true } : {}),
+    ...(hasBannerImagePublicId ? { bannerImagePublicId: true } : {}),
     ...(hasGalleryImages ? { galleryImages: true } : {}),
+    ...(hasGalleryImagePublicIds ? { galleryImagePublicIds: true } : {}),
     ...(hasTicketPrice ? { ticketPrice: true } : {}),
     ...(includeRelations
       ? {
@@ -163,6 +318,66 @@ async function getEventSelect(includeRelations = false): Promise<Record<string, 
         }
       : {}),
   };
+}
+
+function buildGalleryImageEntries(event: Pick<EventRecord, 'galleryImages' | 'galleryImagePublicIds'>): Array<{ url: string; publicId: string | null }> {
+  return (event.galleryImages ?? []).map((url, index) => ({
+    url,
+    publicId: event.galleryImagePublicIds?.[index] ?? null,
+  }));
+}
+
+function resolveNextGalleryImagePublicIds(
+  existingEvent: Pick<EventRecord, 'galleryImages' | 'galleryImagePublicIds'>,
+  nextGalleryImages: string[],
+  uploadedGalleryImagePublicIds: string[] = [],
+): string[] {
+  const existingEntries = buildGalleryImageEntries(existingEvent);
+  const usedExistingIndexes = new Set<number>();
+  let uploadedIndex = 0;
+
+  return nextGalleryImages.map((imageUrl) => {
+    const matchedIndex = existingEntries.findIndex(
+      (entry, index) => !usedExistingIndexes.has(index) && entry.url === imageUrl,
+    );
+
+    if (matchedIndex >= 0) {
+      usedExistingIndexes.add(matchedIndex);
+      return existingEntries[matchedIndex]?.publicId ?? '';
+    }
+
+    const nextUploadedPublicId = uploadedGalleryImagePublicIds[uploadedIndex] ?? '';
+    uploadedIndex += 1;
+    return nextUploadedPublicId;
+  });
+}
+
+function getRemovedGalleryImagePublicIds(
+  existingEvent: Pick<EventRecord, 'galleryImages' | 'galleryImagePublicIds'>,
+  nextGalleryImages?: string[],
+): string[] {
+  if (!nextGalleryImages) {
+    return [];
+  }
+
+  const remainingEntries = [...buildGalleryImageEntries(existingEvent)];
+  const keptPublicIds = new Set<string>();
+
+  nextGalleryImages.forEach((imageUrl) => {
+    const matchedIndex = remainingEntries.findIndex((entry) => entry.url === imageUrl);
+
+    if (matchedIndex >= 0) {
+      const [matchedEntry] = remainingEntries.splice(matchedIndex, 1);
+
+      if (matchedEntry?.publicId) {
+        keptPublicIds.add(matchedEntry.publicId);
+      }
+    }
+  });
+
+  return buildGalleryImageEntries(existingEvent)
+    .filter((entry) => entry.publicId && !keptPublicIds.has(entry.publicId))
+    .map((entry) => entry.publicId!);
 }
 
 function normalizeText(value: string): string {
@@ -397,7 +612,7 @@ async function syncPublishedEventVenueBooking(
 }
 
 function toEventDto(
-  event: EventRecord,
+  event: EventWithTicketMetrics,
 ): EventDto {
   return {
     id: event.id,
@@ -413,6 +628,8 @@ function toEventDto(
     startTime: event.startTime,
     endTime: event.endTime,
     attendeeLimit: event.attendeeLimit,
+    soldTickets: event.soldTickets,
+    remainingSeats: event.remainingSeats,
     venueId: event.venueId,
     organizerId: event.organizerId,
     status: event.status as EventDto['status'],
@@ -424,6 +641,42 @@ function toEventDto(
     ...(event.venue ? { venue: event.venue } : {}),
     ...(event.organizer ? { organizer: event.organizer } : {}),
   };
+}
+
+async function getSoldTicketsByEventIds(eventIds: string[], executor: PrismaExecutor = prisma): Promise<Map<string, number>> {
+  if (eventIds.length === 0) {
+    return new Map();
+  }
+
+  const rows = await getTicketBookingDelegate(executor).groupBy({
+    by: ['eventId'],
+    where: {
+      eventId: { in: eventIds },
+      bookingStatus: BOOKING_STATUS.CONFIRMED,
+    },
+    _sum: {
+      quantity: true,
+    },
+  });
+
+  return new Map(rows.map((row) => [row.eventId, row._sum.quantity ?? 0]));
+}
+
+async function attachTicketMetrics(events: EventRecord[], executor: PrismaExecutor = prisma): Promise<EventWithTicketMetrics[]> {
+  const soldTicketsByEventId = await getSoldTicketsByEventIds(
+    [...new Set(events.map((event) => event.id))],
+    executor,
+  );
+
+  return events.map((event) => {
+    const soldTickets = soldTicketsByEventId.get(event.id) ?? 0;
+
+    return {
+      ...event,
+      soldTickets,
+      remainingSeats: Math.max(event.attendeeLimit - soldTickets, 0),
+    };
+  });
 }
 
 async function ensureEventExists(id: string): Promise<EventRecord> {
@@ -444,6 +697,10 @@ async function ensureEventExists(id: string): Promise<EventRecord> {
       status: true,
       createdAt: true,
       updatedAt: true,
+      bannerImage: true,
+      bannerImagePublicId: true,
+      galleryImages: true,
+      galleryImagePublicIds: true,
     },
   })) as EventRecord | null;
 
@@ -499,50 +756,58 @@ export async function createEvent(payload: CreateEventInput): Promise<EventDto> 
   ensureValidDateRange(startDate, endDate);
   ensureStartDateIsFuture(startDate);
 
-  const createdEvent = await prisma.$transaction(async (transaction) => {
-    await validateVenueCapacity(normalizedPayload.venueId, normalizedPayload.attendeeLimit, transaction);
-    const [optionalImageData, optionalScalarData] = await Promise.all([
-      getOptionalEventImageData({
-        bannerImage: normalizedPayload.bannerImage ?? null,
-        galleryImages: normalizedPayload.galleryImages ?? [],
-      }),
-      getOptionalEventScalarData({ ticketPrice: normalizedPayload.ticketPrice }),
-    ]);
+  const createdEvent = await withEventSchemaRetry(() =>
+    prisma.$transaction(async (transaction) => {
+      await validateVenueCapacity(normalizedPayload.venueId, normalizedPayload.attendeeLimit, transaction);
+      const [optionalImageData, optionalScalarData] = await Promise.all([
+        getOptionalEventImageData({
+          bannerImage: normalizedPayload.bannerImage ?? null,
+          bannerImagePublicId: normalizedPayload.bannerImagePublicId ?? null,
+          galleryImages: normalizedPayload.galleryImages ?? [],
+          galleryImagePublicIds: normalizedPayload.galleryImagePublicIds ?? [],
+        }),
+        getOptionalEventScalarData({ ticketPrice: normalizedPayload.ticketPrice }),
+      ]);
 
-    const event = await transaction.event.create({
-      data: {
-        title: normalizedPayload.title,
-        description: normalizedPayload.description ?? null,
-        ...optionalImageData,
-        category: normalizedPayload.category,
-        ...optionalScalarData,
+      const event = await createEventRecord(
+        transaction,
+        {
+          title: normalizedPayload.title,
+          description: normalizedPayload.description ?? null,
+          bannerImage: normalizedPayload.bannerImage ?? null,
+          galleryImages: normalizedPayload.galleryImages ?? [],
+          category: normalizedPayload.category,
+          ticketPrice: normalizedPayload.ticketPrice,
+          startDate,
+          endDate,
+          startTime: normalizedPayload.startTime ?? null,
+          endTime: normalizedPayload.endTime ?? null,
+          attendeeLimit: normalizedPayload.attendeeLimit,
+          venueId: normalizedPayload.venueId ?? null,
+          organizerId: normalizedPayload.organizerId,
+          status: normalizedPayload.status ?? 'DRAFT',
+        },
+        optionalImageData,
+        optionalScalarData,
+      );
+
+      if (!normalizedPayload.venueId || event.status !== 'PUBLISHED') {
+        return event;
+      }
+
+      await reserveVenueForPublishedEvent(event.id, {
+        executor: transaction,
+        venueId: normalizedPayload.venueId,
         startDate,
         endDate,
         startTime: normalizedPayload.startTime ?? null,
         endTime: normalizedPayload.endTime ?? null,
-        attendeeLimit: normalizedPayload.attendeeLimit,
-        venueId: normalizedPayload.venueId ?? null,
-        organizerId: normalizedPayload.organizerId,
-        status: normalizedPayload.status ?? 'DRAFT',
-      },
-    });
+        createdById: normalizedPayload.organizerId,
+      });
 
-    if (!normalizedPayload.venueId || event.status !== 'PUBLISHED') {
       return event;
-    }
-
-    await reserveVenueForPublishedEvent(event.id, {
-      executor: transaction,
-      venueId: normalizedPayload.venueId,
-      startDate,
-      endDate,
-      startTime: normalizedPayload.startTime ?? null,
-      endTime: normalizedPayload.endTime ?? null,
-      createdById: normalizedPayload.organizerId,
-    });
-
-    return event;
-  });
+    }),
+  );
 
   const event = (await eventDelegate.findUnique({ where: { id: createdEvent.id }, select: (await getEventSelect(true)) as never })) as EventRecord | null;
 
@@ -550,7 +815,7 @@ export async function createEvent(payload: CreateEventInput): Promise<EventDto> 
     throw new AppError('Event not found after creation', 500);
   }
 
-  return toEventDto(event);
+  return toEventDto((await attachTicketMetrics([event]))[0]!);
 }
 
 export async function getEvents(query: EventListQuery, user: AuthenticatedUser): Promise<PaginatedEventsData> {
@@ -606,8 +871,10 @@ export async function getEvents(query: EventListQuery, user: AuthenticatedUser):
     getEventDelegate().count({ where: whereClause }),
   ]);
 
+  const eventsWithMetrics = await attachTicketMetrics(items as EventRecord[]);
+
   return {
-    events: (items as EventRecord[]).map(toEventDto),
+    events: eventsWithMetrics.map(toEventDto),
     pagination: {
       total: totalItems,
       page: query.page,
@@ -654,8 +921,10 @@ export async function getPublicEvents(query: EventListQuery): Promise<PaginatedE
     getEventDelegate().count({ where: whereClause }),
   ]);
 
+  const eventsWithMetrics = await attachTicketMetrics(items as EventRecord[]);
+
   return {
-    events: (items as EventRecord[]).map(toEventDto),
+    events: eventsWithMetrics.map(toEventDto),
     pagination: {
       total: totalItems,
       page: query.page,
@@ -676,7 +945,7 @@ export async function getEventById(id: string, user: AuthenticatedUser): Promise
     throw new AppError('Event not found', 404);
   }
 
-  return toEventDto(event);
+  return toEventDto((await attachTicketMetrics([event]))[0]!);
 }
 
 export async function getPublicEventById(id: string): Promise<EventDto> {
@@ -693,7 +962,7 @@ export async function getPublicEventById(id: string): Promise<EventDto> {
     throw new AppError('Event not found', 404);
   }
 
-  return toEventDto(event);
+  return toEventDto((await attachTicketMetrics([event]))[0]!);
 }
 
 export async function updateEvent(id: string, payload: UpdateEventInput, user: AuthenticatedUser): Promise<EventDto> {
@@ -716,11 +985,28 @@ export async function updateEvent(id: string, payload: UpdateEventInput, user: A
     normalizedPayload.startTime !== undefined ||
     normalizedPayload.endTime !== undefined;
   const venueChanged = normalizedPayload.venueId !== undefined && normalizedPayload.venueId !== existingEvent.venueId;
+  const nextBannerImage = normalizedPayload.bannerImage === undefined ? existingEvent.bannerImage ?? null : normalizedPayload.bannerImage;
+  const nextBannerImagePublicId =
+    normalizedPayload.bannerImage === undefined
+      ? existingEvent.bannerImagePublicId ?? null
+      : normalizedPayload.bannerImagePublicId ?? null;
+  const nextGalleryImages = normalizedPayload.galleryImages ?? existingEvent.galleryImages ?? [];
+  const nextGalleryImagePublicIds =
+    normalizedPayload.galleryImages !== undefined
+      ? resolveNextGalleryImagePublicIds(existingEvent, normalizedPayload.galleryImages, normalizedPayload.galleryImagePublicIds ?? [])
+      : existingEvent.galleryImagePublicIds ?? [];
+  const removedGalleryImagePublicIds =
+    normalizedPayload.galleryImages !== undefined ? getRemovedGalleryImagePublicIds(existingEvent, normalizedPayload.galleryImages) : [];
+  const shouldDeletePreviousBanner =
+    normalizedPayload.bannerImage !== undefined &&
+    existingEvent.bannerImagePublicId !== undefined &&
+    existingEvent.bannerImagePublicId !== null &&
+    existingEvent.bannerImagePublicId !== nextBannerImagePublicId;
 
   const [optionalImageData, optionalScalarData] = await Promise.all([
     getOptionalEventImageData({
-      ...(normalizedPayload.bannerImage !== undefined ? { bannerImage: normalizedPayload.bannerImage } : {}),
-      ...(normalizedPayload.galleryImages !== undefined ? { galleryImages: normalizedPayload.galleryImages } : {}),
+      ...(normalizedPayload.bannerImage !== undefined ? { bannerImage: nextBannerImage, bannerImagePublicId: nextBannerImagePublicId } : {}),
+      ...(normalizedPayload.galleryImages !== undefined ? { galleryImages: nextGalleryImages, galleryImagePublicIds: nextGalleryImagePublicIds } : {}),
     }),
     getOptionalEventScalarData({ ticketPrice: normalizedPayload.ticketPrice }),
   ]);
@@ -736,45 +1022,58 @@ export async function updateEvent(id: string, payload: UpdateEventInput, user: A
     attendeeLimit: nextAttendeeLimit,
     venueId: nextVenueId,
     ...(normalizedPayload.ticketPrice !== undefined ? { ticketPrice: normalizedPayload.ticketPrice } : {}),
-    ...(normalizedPayload.bannerImage !== undefined ? { bannerImage: normalizedPayload.bannerImage } : {}),
-    ...(normalizedPayload.galleryImages !== undefined ? { galleryImages: normalizedPayload.galleryImages } : {}),
+    ...(normalizedPayload.bannerImage !== undefined ? { bannerImage: nextBannerImage, bannerImagePublicId: nextBannerImagePublicId } : {}),
+    ...(normalizedPayload.galleryImages !== undefined ? { galleryImages: nextGalleryImages, galleryImagePublicIds: nextGalleryImagePublicIds } : {}),
   };
 
-  await prisma.$transaction(async (transaction) => {
-    await validateVenueCapacity(nextVenueId, nextAttendeeLimit, transaction);
+  await withEventSchemaRetry(() =>
+    prisma.$transaction(async (transaction) => {
+      await validateVenueCapacity(nextVenueId, nextAttendeeLimit, transaction);
 
-    if (existingEvent.status === 'PUBLISHED' && (scheduleChanged || venueChanged)) {
-      await syncPublishedEventVenueBooking(transaction, id, existingEvent, {
-        venueId: nextVenueId,
-        startDate: nextStartDate,
-        endDate: nextEndDate,
-        startTime: nextStartTime,
-        endTime: nextEndTime,
-        organizerId: existingEvent.organizerId,
+      if (existingEvent.status === 'PUBLISHED' && (scheduleChanged || venueChanged)) {
+        await syncPublishedEventVenueBooking(transaction, id, existingEvent, {
+          venueId: nextVenueId,
+          startDate: nextStartDate,
+          endDate: nextEndDate,
+          startTime: nextStartTime,
+          endTime: nextEndTime,
+          organizerId: existingEvent.organizerId,
+        });
+      }
+
+      await getEventDelegate(transaction).update({
+        where: { id },
+        data: {
+          ...(normalizedPayload.title !== undefined ? { title: normalizedPayload.title } : {}),
+          ...(normalizedPayload.description !== undefined ? { description: normalizedPayload.description ?? null } : {}),
+          ...optionalImageData,
+          ...(normalizedPayload.category !== undefined ? { category: normalizedPayload.category } : {}),
+          ...optionalScalarData,
+          ...(normalizedPayload.startDate !== undefined ? { startDate: nextStartDate } : {}),
+          ...(normalizedPayload.endDate !== undefined ? { endDate: nextEndDate } : {}),
+          ...(normalizedPayload.startTime !== undefined ? { startTime: normalizedPayload.startTime ?? null } : {}),
+          ...(normalizedPayload.endTime !== undefined ? { endTime: normalizedPayload.endTime ?? null } : {}),
+          ...(normalizedPayload.attendeeLimit !== undefined ? { attendeeLimit: normalizedPayload.attendeeLimit } : {}),
+          ...(normalizedPayload.venueId !== undefined ? { venueId: normalizedPayload.venueId } : {}),
+        },
+        select: {
+          id: true,
+        },
       });
-    }
 
-    await getEventDelegate(transaction).update({
-      where: { id },
-      data: {
-        ...(normalizedPayload.title !== undefined ? { title: normalizedPayload.title } : {}),
-        ...(normalizedPayload.description !== undefined ? { description: normalizedPayload.description ?? null } : {}),
-        ...optionalImageData,
-        ...(normalizedPayload.category !== undefined ? { category: normalizedPayload.category } : {}),
-        ...optionalScalarData,
-        ...(normalizedPayload.startDate !== undefined ? { startDate: nextStartDate } : {}),
-        ...(normalizedPayload.endDate !== undefined ? { endDate: nextEndDate } : {}),
-        ...(normalizedPayload.startTime !== undefined ? { startTime: normalizedPayload.startTime ?? null } : {}),
-        ...(normalizedPayload.endTime !== undefined ? { endTime: normalizedPayload.endTime ?? null } : {}),
-        ...(normalizedPayload.attendeeLimit !== undefined ? { attendeeLimit: normalizedPayload.attendeeLimit } : {}),
-        ...(normalizedPayload.venueId !== undefined ? { venueId: normalizedPayload.venueId } : {}),
-      },
-    });
+      if (normalizedPayload.status !== undefined && normalizedPayload.status !== existingEvent.status) {
+        await updateEventStatusInTransaction(transaction, id, { status: normalizedPayload.status }, user, nextEventState);
+      }
+    }),
+  );
 
-    if (normalizedPayload.status !== undefined && normalizedPayload.status !== existingEvent.status) {
-      await updateEventStatusInTransaction(transaction, id, { status: normalizedPayload.status }, user, nextEventState);
-    }
-  });
+  if (shouldDeletePreviousBanner) {
+    await deleteFromCloudinary(existingEvent.bannerImagePublicId);
+  }
+
+  if (removedGalleryImagePublicIds.length > 0) {
+    await Promise.all(removedGalleryImagePublicIds.map((publicId) => deleteFromCloudinary(publicId)));
+  }
 
   return getEventById(id, user);
 }
@@ -829,6 +1128,9 @@ async function updateEventStatusInTransaction(
   await getEventDelegate(transaction).update({
     where: { id },
     data: { status: payload.status },
+    select: {
+      id: true,
+    },
   });
 }
 
@@ -844,6 +1146,16 @@ export async function deleteEvent(id: string, user: AuthenticatedUser): Promise<
       await cancelBookingsForEventInTransaction(transaction, id);
     }
 
-    await getEventDelegate(transaction).delete({ where: { id } });
+    await getEventDelegate(transaction).delete({
+      where: { id },
+      select: {
+        id: true,
+      },
+    });
   });
+
+  await Promise.all([
+    deleteFromCloudinary(event.bannerImagePublicId),
+    ...((event.galleryImagePublicIds ?? []).map((publicId) => deleteFromCloudinary(publicId))),
+  ]);
 }

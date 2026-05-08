@@ -6,7 +6,9 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { useAuth } from '@/hooks/useAuth';
 import { eventService } from '@/services/event.service';
+import { ticketService } from '@/services/ticketService';
 import type { EventListData, EventListFilters } from '@/types/event.types';
+import type { TicketEventStats } from '@/types/ticket.types';
 import { getApiErrorMessage } from '@/utils/getApiErrorMessage';
 
 const initialFilters: EventListFilters = {
@@ -36,6 +38,7 @@ function OrganizerEventsPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statsByEventId, setStatsByEventId] = useState<Record<string, TicketEventStats>>({});
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const isAdminWorkspace = location.pathname.startsWith('/admin');
   const eventsBasePath = isAdminWorkspace ? '/admin/events' : '/organizer/events';
@@ -85,6 +88,17 @@ function OrganizerEventsPage() {
       setError(null);
       const response = await eventService.getEvents(nextFilters);
       const nextData = response.data ?? emptyData;
+      const statsEntries = await Promise.all(
+        nextData.events.map(async (event) => {
+          try {
+            const statsResponse = await ticketService.getEventStats(event.id);
+            return [event.id, statsResponse.data ?? null] as const;
+          } catch {
+            return [event.id, null] as const;
+          }
+        }),
+      );
+
       setData((current) =>
         append
           ? {
@@ -93,6 +107,17 @@ function OrganizerEventsPage() {
             }
           : nextData,
       );
+      setStatsByEventId((current) => {
+        const nextStats = append ? { ...current } : {};
+
+        for (const [eventId, stats] of statsEntries) {
+          if (stats) {
+            nextStats[eventId] = stats;
+          }
+        }
+
+        return nextStats;
+      });
     } catch (requestError) {
       setError(getApiErrorMessage(requestError));
     } finally {
@@ -162,7 +187,7 @@ function OrganizerEventsPage() {
       {!loading ? (
         <div className="grid gap-5 lg:grid-cols-3">
           {data.events.map((event) => (
-            <EventCard key={event.id} event={event} />
+            <EventCard key={event.id} event={event} stats={statsByEventId[event.id]} />
           ))}
           {data.events.length === 0 ? <Card className="p-6 text-sm text-slate-600 lg:col-span-3">No events match the current filters.</Card> : null}
         </div>

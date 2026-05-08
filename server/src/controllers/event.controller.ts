@@ -3,12 +3,10 @@ import { createEvent, deleteEvent, getEventById, getEvents, getPublicEventById, 
 import type { ApiResponse } from '../types/api';
 import type { AuthenticatedRequest } from '../types/auth.types';
 import type { EventDto, PaginatedEventsData } from '../types/event.types';
+import { deleteFromCloudinary } from '../utils/deleteFromCloudinary';
 import { createEventBodySchema, eventIdParamSchema, eventListQuerySchema, updateEventBodySchema, updateEventStatusBodySchema } from '../validations/event.validation';
 import { sendSuccess } from '../utils/response';
-
-function buildUploadUrl(request: AuthenticatedRequest, filename: string): string {
-  return `${request.protocol}://${request.get('host')}/uploads/events/${filename}`;
-}
+import { uploadToCloudinary } from '../utils/uploadToCloudinary';
 
 function normalizeGalleryImages(value: unknown): string[] | undefined {
   if (Array.isArray(value)) {
@@ -47,31 +45,68 @@ function normalizeEventBody(body: AuthenticatedRequest['body']): Record<string, 
   return normalizedBody;
 }
 
-function getUploadedEventImages(request: AuthenticatedRequest): { bannerImage?: string; galleryImages?: string[] } {
+async function getUploadedEventImages(request: AuthenticatedRequest): Promise<{
+  bannerImage?: string;
+  bannerImagePublicId?: string;
+  galleryImages?: string[];
+  galleryImagePublicIds?: string[];
+}> {
   const uploadedFiles = request.files as Record<string, Express.Multer.File[]> | undefined;
   const bannerFile = uploadedFiles?.bannerImageFile?.[0];
   const galleryFiles = uploadedFiles?.galleryImageFiles ?? [];
+  const [uploadedBanner, uploadedGallery] = await Promise.all([
+    bannerFile
+      ? uploadToCloudinary(bannerFile, {
+          folder: 'event-management-system/events/banners',
+        })
+      : Promise.resolve(null),
+    galleryFiles.length > 0
+      ? Promise.all(
+          galleryFiles.map((file) =>
+            uploadToCloudinary(file, {
+              folder: 'event-management-system/events/gallery',
+            }),
+          ),
+        )
+      : Promise.resolve([]),
+  ]);
 
   return {
-    ...(bannerFile ? { bannerImage: buildUploadUrl(request, bannerFile.filename) } : {}),
-    ...(galleryFiles.length > 0 ? { galleryImages: galleryFiles.map((file) => buildUploadUrl(request, file.filename)) } : {}),
+    ...(uploadedBanner ? { bannerImage: uploadedBanner.secureUrl, bannerImagePublicId: uploadedBanner.publicId } : {}),
+    ...(uploadedGallery.length > 0
+      ? {
+          galleryImages: uploadedGallery.map((image) => image.secureUrl),
+          galleryImagePublicIds: uploadedGallery.map((image) => image.publicId),
+        }
+      : {}),
   };
+}
+
+async function cleanupUploadedImages(publicIds: Array<string | null | undefined>): Promise<void> {
+  await Promise.all(publicIds.map((publicId) => deleteFromCloudinary(publicId).catch(() => undefined)));
 }
 
 export async function createEventController(
   request: AuthenticatedRequest,
   response: Response<ApiResponse<EventDto>>,
 ): Promise<void> {
-  const uploadedImages = getUploadedEventImages(request);
+  const uploadedImages = await getUploadedEventImages(request);
   const payload = createEventBodySchema.parse({
     ...normalizeEventBody(request.body),
-    ...(uploadedImages.bannerImage ? { bannerImage: uploadedImages.bannerImage } : {}),
-    ...(uploadedImages.galleryImages ? { galleryImages: uploadedImages.galleryImages } : {}),
+    ...(uploadedImages.bannerImage ? { bannerImage: uploadedImages.bannerImage, bannerImagePublicId: uploadedImages.bannerImagePublicId } : {}),
+    ...(uploadedImages.galleryImages ? { galleryImages: uploadedImages.galleryImages, galleryImagePublicIds: uploadedImages.galleryImagePublicIds } : {}),
   });
-  const event = await createEvent({
-    ...payload,
-    organizerId: request.user!.id,
-  });
+  let event: EventDto;
+
+  try {
+    event = await createEvent({
+      ...payload,
+      organizerId: request.user!.id,
+    });
+  } catch (error) {
+    await cleanupUploadedImages([uploadedImages.bannerImagePublicId, ...(uploadedImages.galleryImagePublicIds ?? [])]);
+    throw error;
+  }
 
   sendSuccess(response, 201, 'Event created successfully', event);
 }
@@ -117,7 +152,7 @@ export async function updateEventController(
   response: Response<ApiResponse<EventDto>>,
 ): Promise<void> {
   const { id } = eventIdParamSchema.parse(request.params);
-  const uploadedImages = getUploadedEventImages(request);
+  const uploadedImages = await getUploadedEventImages(request);
   const normalizedBody = normalizeEventBody(request.body);
   const retainedGalleryImages = normalizeGalleryImages(normalizedBody.galleryImages);
   const nextGalleryImages =
@@ -126,10 +161,18 @@ export async function updateEventController(
       : undefined;
   const payload = updateEventBodySchema.parse({
     ...normalizedBody,
-    ...(uploadedImages.bannerImage ? { bannerImage: uploadedImages.bannerImage } : {}),
-    ...(nextGalleryImages !== undefined ? { galleryImages: nextGalleryImages } : {}),
+    ...(uploadedImages.bannerImage ? { bannerImage: uploadedImages.bannerImage, bannerImagePublicId: uploadedImages.bannerImagePublicId } : {}),
+    ...(nextGalleryImages !== undefined ? { galleryImages: nextGalleryImages, galleryImagePublicIds: uploadedImages.galleryImagePublicIds ?? [] } : {}),
   });
-  const event = await updateEvent(id, payload, request.user!);
+  let event: EventDto;
+
+  try {
+    event = await updateEvent(id, payload, request.user!);
+  } catch (error) {
+    await cleanupUploadedImages([uploadedImages.bannerImagePublicId, ...(uploadedImages.galleryImagePublicIds ?? [])]);
+    throw error;
+  }
+
   sendSuccess(response, 200, 'Event updated successfully', event);
 }
 

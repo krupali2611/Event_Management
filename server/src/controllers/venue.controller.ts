@@ -10,7 +10,7 @@ import {
 } from '../services/venue.service';
 import type { ApiResponse } from '../types/api';
 import type { AuthenticatedRequest } from '../types/auth.types';
-import type { PaginatedVenuesData, VenueAvailabilityResult, VenueDto } from '../types/venue.types';
+import type { PaginatedVenuesData, VenueAvailabilityResult, VenueDto, VenueImageUploadDto } from '../types/venue.types';
 import {
   createVenueBodySchema,
   venueIdParamSchema,
@@ -18,6 +18,7 @@ import {
   updateVenueBodySchema,
 } from '../validations/venue.validation';
 import { sendSuccess } from '../utils/response';
+import { uploadToCloudinary } from '../utils/uploadToCloudinary';
 
 export async function createVenueController(
   request: AuthenticatedRequest,
@@ -93,12 +94,18 @@ export async function getVenueAvailabilityController(
 
 export async function uploadVenueImageController(
   request: AuthenticatedRequest,
-  response: Response<ApiResponse<{ imageUrl: string }>>,
+  response: Response<ApiResponse<VenueImageUploadDto>>,
 ): Promise<void> {
   if (!request.file) {
     throw new Error('Venue image is required');
   }
 
-  const imageUrl = `${request.protocol}://${request.get('host')}/uploads/venues/${request.file.filename}`;
-  sendSuccess(response, 201, 'Venue image uploaded successfully', { imageUrl });
+  const uploadedImage = await uploadToCloudinary(request.file, {
+    folder: 'event-management-system/venues',
+  });
+
+  sendSuccess(response, 201, 'Venue image uploaded successfully', {
+    imageUrl: uploadedImage.secureUrl,
+    publicId: uploadedImage.publicId,
+  });
 }

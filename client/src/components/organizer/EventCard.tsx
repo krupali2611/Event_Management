@@ -5,6 +5,7 @@ import EventStatusBadge from '@/components/organizer/EventStatusBadge';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import type { EventItem } from '@/types/event.types';
+import type { TicketEventStats } from '@/types/ticket.types';
 
 const EVENT_FALLBACK_IMAGE =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 720'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' x2='1' y1='0' y2='1'%3E%3Cstop stop-color='%23dbeafe'/%3E%3Cstop offset='.5' stop-color='%23e0f2fe'/%3E%3Cstop offset='1' stop-color='%23ffedd5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='1200' height='720' fill='url(%23g)'/%3E%3Ccircle cx='965' cy='180' r='110' fill='%23ffffff' fill-opacity='.4'/%3E%3Ccircle cx='260' cy='590' r='160' fill='%23ffffff' fill-opacity='.25'/%3E%3Ctext x='80' y='620' fill='%23334155' font-family='Arial, sans-serif' font-size='72' font-weight='700'%3EEvent Image%3C/text%3E%3C/svg%3E";
@@ -40,7 +41,15 @@ function IconAction({ children, tooltip }: { children: ReactNode; tooltip: strin
   );
 }
 
-function EventCard({ event }: { event: EventItem }) {
+function formatRevenue(amount: number): string {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
+  }).format(amount);
+}
+
+function EventCard({ event, stats }: { event: EventItem; stats?: TicketEventStats }) {
   const location = useLocation();
   const eventsBasePath = location.pathname.startsWith('/admin') ? '/admin/events' : '/organizer/events';
   const eventImage = event.image ?? event.bannerImage ?? EVENT_FALLBACK_IMAGE;
@@ -93,7 +102,7 @@ function EventCard({ event }: { event: EventItem }) {
         </div>
       </div>
 
-      <div className="space-y-4 p-4">
+        <div className="space-y-4 p-4">
         <div className="space-y-3">
           <div className="flex items-start justify-between gap-3">
             <h3 className="text-lg font-semibold text-slate-950 transition-colors duration-200 group-hover:text-brand-700">{event.title}</h3>
@@ -109,6 +118,25 @@ function EventCard({ event }: { event: EventItem }) {
               <MapPin className="h-4 w-4 text-brand-500" />
               <span className="truncate">{event.venue?.name ?? 'Venue not assigned yet'}</span>
             </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-3 text-xs text-slate-600">
+          <div>
+            <p className="uppercase tracking-[0.18em] text-slate-400">Sold</p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">{stats?.totalTicketsSold ?? event.soldTickets}</p>
+          </div>
+          <div>
+            <p className="uppercase tracking-[0.18em] text-slate-400">Seats Left</p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">{stats?.remainingSeats ?? event.remainingSeats}</p>
+          </div>
+          <div>
+            <p className="uppercase tracking-[0.18em] text-slate-400">Revenue</p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">{formatRevenue(stats?.totalRevenue ?? 0)}</p>
+          </div>
+          <div>
+            <p className="uppercase tracking-[0.18em] text-slate-400">Bookings</p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">{stats?.confirmedBookings ?? 0}</p>
           </div>
         </div>
 
@@ -131,6 +159,12 @@ function EventCard({ event }: { event: EventItem }) {
               </Link>
             </IconAction>
           ) : null}
+        </div>
+
+        <div className="flex justify-end">
+          <Link to={`${eventsBasePath}/${event.id}/attendees`}>
+            <Button variant="secondary" size="sm">View Attendees</Button>
+          </Link>
         </div>
       </div>
     </Card>

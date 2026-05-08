@@ -17,6 +17,7 @@ const venueFormSchema = z.object({
   capacity: z.coerce.number().int().min(1, 'Capacity must be greater than 0'),
   description: z.string().trim().optional(),
   image: z.union([z.string().trim().url('Please enter a valid URL'), z.literal('')]).optional(),
+  imagePublicId: z.string().trim().optional(),
   amenities: z.string().trim().optional(),
   isActive: z.boolean(),
 });
@@ -39,6 +40,7 @@ function mapVenueToValues(initialVenue?: Venue): VenueFormValues {
     capacity: initialVenue?.capacity ?? 1,
     description: initialVenue?.description ?? '',
     image: initialVenue?.image ?? '',
+    imagePublicId: '',
     amenities: initialVenue?.amenities.join(', ') ?? '',
     isActive: initialVenue?.isActive ?? true,
   };
@@ -89,6 +91,7 @@ function VenueForm({ mode, initialVenue, submitting, onSubmit }: VenueFormProps)
       capacity: values.capacity,
       description: values.description?.trim() || undefined,
       image: values.image?.trim() || undefined,
+      imagePublicId: values.imagePublicId?.trim() || undefined,
       amenities: (values.amenities ?? '')
         .split(',')
         .map((item) => item.trim())
@@ -109,7 +112,9 @@ function VenueForm({ mode, initialVenue, submitting, onSubmit }: VenueFormProps)
       setImageError(null);
       const response = await venueService.uploadVenueImage(file);
       const uploadedImageUrl = response.data?.imageUrl ?? '';
+      const uploadedImagePublicId = response.data?.publicId ?? '';
       setValue('image', uploadedImageUrl, { shouldDirty: true, shouldValidate: true });
+      setValue('imagePublicId', uploadedImagePublicId, { shouldDirty: true });
     } catch (requestError) {
       setImageError(getApiErrorMessage(requestError));
     } finally {
@@ -168,6 +173,7 @@ function VenueForm({ mode, initialVenue, submitting, onSubmit }: VenueFormProps)
                 {imageUrl ? <span className="text-sm text-emerald-700">Image uploaded</span> : <span className="text-sm text-slate-500">No image selected</span>}
               </div>
               <input type="hidden" {...register('image')} />
+              <input type="hidden" {...register('imagePublicId')} />
               {errors.image ? <p className="text-sm text-rose-600">{errors.image.message}</p> : null}
               {imageError ? <p className="text-sm text-rose-600">{imageError}</p> : null}
             </label>

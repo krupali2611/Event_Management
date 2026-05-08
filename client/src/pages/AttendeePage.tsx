@@ -1,6 +1,7 @@
 import { CalendarDays, MapPin, Ticket } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import RemainingSeatsIndicator from '@/components/tickets/RemainingSeatsIndicator';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { getPublicEvents } from '@/services/api';
@@ -75,6 +76,14 @@ function AttendeePage() {
                   {event.venue ? `${event.venue.name}, ${event.venue.location}` : 'Venue to be announced'}
                 </div>
                 <div className="text-sm font-semibold text-slate-900">{formatTicketPrice(event.ticketPrice)}</div>
+              </div>
+              <div className="mt-4">
+                <RemainingSeatsIndicator
+                  remainingSeats={event.remainingSeats}
+                  attendeeLimit={event.attendeeLimit}
+                  soldTickets={event.soldTickets}
+                  compact
+                />
               </div>
               <Link to={`/events/${event.id}`}>
                 <Button className="mt-5 w-full bg-orange-500 hover:bg-orange-600" size="lg" icon={<Ticket className="h-4 w-4" />}>

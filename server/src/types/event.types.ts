@@ -15,6 +15,8 @@ export interface EventDto {
   startTime: string | null;
   endTime: string | null;
   attendeeLimit: number;
+  soldTickets: number;
+  remainingSeats: number;
   venueId: string | null;
   organizerId: string;
   status: EventStatus;
@@ -61,7 +63,9 @@ export interface CreateEventInput {
   title: string;
   description?: string;
   bannerImage?: string | null;
+  bannerImagePublicId?: string | null;
   galleryImages?: string[];
+  galleryImagePublicIds?: string[];
   category: string;
   ticketPrice: number;
   startDate: string;
@@ -78,7 +82,9 @@ export interface UpdateEventInput {
   title?: string;
   description?: string;
   bannerImage?: string | null;
+  bannerImagePublicId?: string | null;
   galleryImages?: string[];
+  galleryImagePublicIds?: string[];
   category?: string;
   ticketPrice?: number;
   startDate?: string;

@@ -57,6 +57,7 @@ export const createVenueBodySchema = z.object({
   capacity: positiveInteger,
   description: optionalTrimmedString,
   image: z.string().trim().optional().transform((value) => (value ? value : undefined)),
+  imagePublicId: z.string().trim().optional().transform((value) => (value ? value : undefined)),
   amenities: amenitiesSchema,
   isActive: z.boolean().optional(),
 });
@@ -69,6 +70,7 @@ export const updateVenueBodySchema = z
     capacity: positiveInteger.optional(),
     description: optionalTrimmedString,
     image: z.string().trim().optional().transform((value) => (value ? value : undefined)),
+    imagePublicId: z.string().trim().optional().transform((value) => (value ? value : undefined)),
     amenities: amenitiesSchema.optional(),
     isActive: z.boolean().optional(),
   })

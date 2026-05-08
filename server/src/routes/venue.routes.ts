@@ -10,7 +10,7 @@ import {
   updateVenueController,
 } from '../controllers/venue.controller';
 import { authenticate } from '../middleware/auth.middleware';
-import { venueImageUpload } from '../middleware/upload.middleware';
+import { venueImageUpload } from '../middleware/upload';
 import { requireRole } from '../middleware/role.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
 

@@ -47,6 +47,7 @@ export interface CreateVenueInput {
   capacity: number;
   description?: string;
   image?: string;
+  imagePublicId?: string;
   amenities: string[];
   isActive?: boolean;
   createdById?: string;
@@ -59,6 +60,7 @@ export interface UpdateVenueInput {
   capacity?: number;
   description?: string;
   image?: string;
+  imagePublicId?: string;
   amenities?: string[];
   isActive?: boolean;
 }
@@ -76,4 +78,5 @@ export interface VenueAvailabilityResult {
 
 export interface VenueImageUploadDto {
   imageUrl: string;
+  publicId: string;
 }

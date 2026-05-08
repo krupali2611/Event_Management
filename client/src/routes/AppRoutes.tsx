@@ -28,7 +28,9 @@ const VenueBookingPage = lazy(() => import('@/pages/organizer/VenueBookingPage')
 const CreateEventPage = lazy(() => import('@/pages/organizer/CreateEventPage'));
 const EditEventPage = lazy(() => import('@/pages/organizer/EditEventPage'));
 const EventDetailPage = lazy(() => import('@/pages/organizer/EventDetailPage'));
+const EventAttendeesPage = lazy(() => import('@/pages/organizer/EventAttendeesPage'));
 const AttendeePage = lazy(() => import('@/pages/AttendeePage'));
+const MyTicketsPage = lazy(() => import('@/pages/MyTicketsPage'));
 
 function AppRoutes() {
   return (
@@ -53,6 +55,7 @@ function AppRoutes() {
             <Route path="admin/events" element={<AdminEventsPage />} />
             <Route path="admin/events/new" element={<AdminCreateEventPage />} />
             <Route path="admin/events/:id" element={<AdminEventDetailPage />} />
+            <Route path="admin/events/:id/attendees" element={<EventAttendeesPage />} />
             <Route path="admin/events/:id/edit" element={<AdminEditEventPage />} />
             <Route path="admin/users" element={<UserManagementPage />} />
             <Route path="admin/users/:id" element={<UserDetailsPage />} />
@@ -70,6 +73,7 @@ function AppRoutes() {
             <Route path="organizer/events" element={<OrganizerEventsPage />} />
             <Route path="organizer/events/new" element={<CreateEventPage />} />
             <Route path="organizer/events/:id" element={<EventDetailPage />} />
+            <Route path="organizer/events/:id/attendees" element={<EventAttendeesPage />} />
             <Route path="organizer/events/:id/edit" element={<EditEventPage />} />
             <Route path="organizer/venue-bookings" element={<VenueBookingPage />} />
           </Route>
@@ -80,6 +84,9 @@ function AppRoutes() {
           <Route path="events/:id" element={<EventDetailPage />} />
           <Route path="attendee" element={<AttendeePage />} />
           <Route path="attendee/events/:id" element={<EventDetailPage />} />
+          <Route element={<ProtectedRoute allowedRoles={['ATTENDEE']} />}>
+            <Route path="my-tickets" element={<MyTicketsPage />} />
+          </Route>
         </Route>
 
         <Route element={<MainLayout />}>

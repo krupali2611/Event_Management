@@ -26,29 +26,47 @@ enum EVENT_STATUS {
   CANCELLED
 }
 
+enum BOOKING_STATUS {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  REFUNDED
+}
+
+enum PAYMENT_STATUS {
+  PENDING
+  PAID
+  FAILED
+  REFUN_PENDING
+  REFUNDED
+}
+
 model User {
-  id            String         @id @default(cuid())
-  name          String
-  email         String         @unique
-  password      String
-  role          USER_ROLE      @default(ATTENDEE)
-  isActive      Boolean        @default(true)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  events        Event[]        @relation("OrganizerEvents")
-  registrations Registration[]
-  venues        Venue[]        @relation("VenueCreator")
-  venueBookings VenueBooking[] @relation("VenueBookingCreator")
+  id             String          @id @default(cuid())
+  name           String
+  email          String          @unique
+  password       String
+  role           USER_ROLE       @default(ATTENDEE)
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  events         Event[]         @relation("OrganizerEvents")
+  registrations  Registration[]
+  ticketBookings TicketBooking[]
+  venues         Venue[]         @relation("VenueCreator")
+  venueBookings  VenueBooking[]  @relation("VenueBookingCreator")
 }
 
 model Event {
-  id             String         @id @default(uuid())
+  id             String          @id @default(uuid())
   title          String
   description    String?
   bannerImage    String?
+  bannerImagePublicId String?
   galleryImages  String[]
+  galleryImagePublicIds String[] @default([])
   category       String
-  ticketPrice    Float          @default(0)
+  ticketPrice    Float           @default(0)
   startDate      DateTime
   endDate        DateTime
   startTime      String?
@@ -56,13 +74,14 @@ model Event {
   attendeeLimit  Int
   venueId        String?
   organizerId    String
-  status         EVENT_STATUS   @default(DRAFT)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  organizer      User           @relation("OrganizerEvents", fields: [organizerId], references: [id], onDelete: Restrict)
-  venue          Venue?         @relation(fields: [venueId], references: [id], onDelete: SetNull)
-  venueBookings  VenueBooking[] @relation("EventVenueBookings")
+  status         EVENT_STATUS    @default(DRAFT)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  organizer      User            @relation("OrganizerEvents", fields: [organizerId], references: [id], onDelete: Restrict)
+  venue          Venue?          @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  venueBookings  VenueBooking[]  @relation("EventVenueBookings")
   registrations  Registration[]
+  ticketBookings TicketBooking[]
 
   @@index([organizerId])
   @@index([venueId])
@@ -84,20 +103,50 @@ model Registration {
   @@unique([userId, eventId])
 }
 
+model TicketBooking {
+  id            String         @id @default(cuid())
+  userId        String
+  eventId       String
+  quantity      Int
+  totalAmount   Float
+  bookingStatus BOOKING_STATUS @default(PENDING)
+  paymentStatus PAYMENT_STATUS @default(PENDING)
+  // Stored as a generated business identifier so future QR/payment flows can use a stable public reference.
+  ticketNumber  String         @unique
+  qrCode        String?
+  bookedAt      DateTime       @default(now())
+  cancelledAt   DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  user          User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  event         Event          @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([eventId])
+  @@index([bookingStatus])
+  @@index([paymentStatus])
+  @@index([bookedAt])
+  @@index([eventId, bookingStatus])
+  @@index([eventId, paymentStatus])
+  @@index([userId, bookingStatus])
+  @@index([userId, eventId, createdAt])
+}
+
 model Venue {
-  id          String   @id @default(cuid())
+  id          String         @id @default(cuid())
   name        String
   location    String
   address     String?
   capacity    Int
   description String?
   image       String?
+  imagePublicId String?
   amenities   String[]
-  isActive    Boolean  @default(true)
+  isActive    Boolean        @default(true)
   createdById String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdBy   User?    @relation("VenueCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  createdBy   User?          @relation("VenueCreator", fields: [createdById], references: [id], onDelete: SetNull)
   bookings    VenueBooking[]
   events      Event[]
 
@@ -128,9 +177,9 @@ model VenueBooking {
   event       Event?               @relation("EventVenueBookings", fields: [eventId], references: [id], onDelete: SetNull)
   createdBy   User?                @relation("VenueBookingCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
+  @@unique([venueId, startDate, endDate, startTime, endTime])
   @@index([venueId, startDate, endDate])
   @@index([status])
   @@index([eventId])
   @@index([createdById])
-  @@unique([venueId, startDate, endDate, startTime, endTime])
 }

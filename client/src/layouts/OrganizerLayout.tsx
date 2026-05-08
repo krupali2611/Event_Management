@@ -13,6 +13,7 @@ const items = [
 
 const headerTitleMap = [
   { pattern: '/organizer/events/new', title: 'Create Event' },
+  { pattern: '/organizer/events/:id/attendees', title: 'Event Attendees' },
   { pattern: '/organizer/events/:id/edit', title: 'Edit Event' },
   { pattern: '/organizer/events/:id', title: 'Event Details' },
   { pattern: '/organizer/events', title: 'Events' },

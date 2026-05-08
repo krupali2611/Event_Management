@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
+import multer from 'multer';
 import { ZodError } from 'zod';
 import type { ApiResponse } from '../types/api';
 import { AppError } from '../utils/response';
@@ -38,6 +39,14 @@ export function errorHandler(
     response.status(error.statusCode).json({
       success: false,
       message: error.message,
+    });
+    return;
+  }
+
+  if (error instanceof multer.MulterError) {
+    response.status(400).json({
+      success: false,
+      message: error.code === 'LIMIT_FILE_SIZE' ? 'Image size must be 5 MB or smaller' : error.message,
     });
     return;
   }

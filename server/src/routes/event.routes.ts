@@ -10,7 +10,7 @@ import {
   updateEventStatusController,
 } from '../controllers/event.controller';
 import { authenticate, authorizeEventOwnership } from '../middleware/auth.middleware';
-import { eventImageUpload } from '../middleware/upload.middleware';
+import { eventImageUpload } from '../middleware/upload';
 import { requireRole } from '../middleware/role.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
 

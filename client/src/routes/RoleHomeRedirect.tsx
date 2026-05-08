@@ -1,6 +1,5 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import AttendeePage from '@/pages/AttendeePage';
 import type { UserRole } from '@/types/api';
 
 function getDefaultRouteForRole(role: UserRole): string {
@@ -30,13 +29,13 @@ function RoleHomeRedirect() {
 
   if (isAuthenticated && currentUser) {
     if (currentUser.role === 'ATTENDEE') {
-      return <AttendeePage />;
+      return <Navigate to="/events" replace />;
     }
 
     return <Navigate to={getDefaultRouteForRole(currentUser.role)} replace />;
   }
 
-  return <AttendeePage />;
+  return <Navigate to="/events" replace />;
 }
 
 export default RoleHomeRedirect;

@@ -31,6 +31,8 @@ export interface EventItem {
   startTime: string | null;
   endTime: string | null;
   attendeeLimit: number;
+  soldTickets: number;
+  remainingSeats: number;
   venueId: string | null;
   organizerId: string;
   status: EventStatus;

@@ -45,10 +45,11 @@ export interface VenuePayload {
   capacity: number;
   description?: string;
   image?: string;
+  imagePublicId?: string;
   amenities: string[];
   isActive?: boolean;
 }
 
 export type VenuesResponse = ApiResponse<VenueListData>;
 export type VenueResponse = ApiResponse<Venue>;
-export type VenueImageUploadResponse = ApiResponse<{ imageUrl: string }>;
+export type VenueImageUploadResponse = ApiResponse<{ imageUrl: string; publicId: string }>;

@@ -82,12 +82,12 @@ function Sidebar({ items, role, theme, onCollapseChange }: SidebarProps) {
       >
         <div className={`${dark ? 'border-[#1F2937] bg-[#0B1220]' : 'border-slate-200 bg-slate-50'} rounded-2xl border p-4`}>
           <p className={`text-[11px] font-semibold uppercase tracking-[0.32em] ${dark ? 'text-[#9CA3AF]' : 'text-slate-500'} ${collapsed ? 'text-center' : ''}`}>
-            Eventify
+            Event Management System
           </p>
           {!collapsed ? (
             <>
               <h2 className="mt-3 text-lg font-semibold">{dashboardTitle}</h2>
-              <p className={`mt-1 text-sm ${dark ? 'text-[#9CA3AF]' : 'text-slate-500'}`}>{role.replace('_', ' ')}</p>
+              
             </>
           ) : null}
         </div>

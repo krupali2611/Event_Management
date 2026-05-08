@@ -1,4 +1,4 @@
-import type { Prisma, Venue } from '@prisma/client';
+import { Prisma, type Venue } from '@prisma/client';
 import { prisma } from '../config/prisma';
 import type {
   CreateVenueInput,
@@ -8,8 +8,16 @@ import type {
   VenueDto,
   VenueListQuery,
 } from '../types/venue.types';
+import { deleteFromCloudinary } from '../utils/deleteFromCloudinary';
 import { AppError } from '../utils/response';
 import { checkVenueAvailability } from '../utils/availability';
+
+type VenueRecord = Pick<
+  Venue,
+  'id' | 'name' | 'location' | 'address' | 'capacity' | 'description' | 'image' | 'amenities' | 'isActive' | 'createdById' | 'createdAt' | 'updatedAt'
+> & {
+  imagePublicId?: string | null;
+};
 
 function getVenueDelegate() {
   if (!('venue' in prisma) || !prisma.venue) {
@@ -19,11 +27,90 @@ function getVenueDelegate() {
   return prisma.venue;
 }
 
+function getVenueModelFieldNames(): Set<string> {
+  const prismaMeta = Prisma as unknown as {
+    dmmf?: {
+      datamodel?: {
+        models?: Array<{
+          name: string;
+          fields: Array<{ name: string }>;
+        }>;
+      };
+    };
+  };
+
+  const venueModel = prismaMeta.dmmf?.datamodel?.models?.find((model) => model.name === 'Venue');
+  return new Set(venueModel?.fields.map((field) => field.name) ?? []);
+}
+
+const venueModelFields = getVenueModelFieldNames();
+let venueDatabaseFieldNamesPromise: Promise<Set<string>> | null = null;
+
+function supportsVenueField(fieldName: string): boolean {
+  return venueModelFields.has(fieldName);
+}
+
+async function getVenueDatabaseFieldNames(): Promise<Set<string>> {
+  if (!venueDatabaseFieldNamesPromise) {
+    venueDatabaseFieldNamesPromise = prisma
+      .$queryRaw<Array<{ column_name: string }>>`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'Venue'
+      `
+      .then((rows) => new Set(rows.map((row) => row.column_name)))
+      .catch(() => new Set<string>());
+  }
+
+  return venueDatabaseFieldNamesPromise;
+}
+
+async function supportsVenueDatabaseField(fieldName: string): Promise<boolean> {
+  if (!supportsVenueField(fieldName)) {
+    return false;
+  }
+
+  const fieldNames = await getVenueDatabaseFieldNames();
+  return fieldNames.has(fieldName);
+}
+
+async function getVenueSelect(): Promise<Record<string, true>> {
+  const hasImagePublicId = await supportsVenueDatabaseField('imagePublicId');
+
+  return {
+    id: true,
+    name: true,
+    location: true,
+    address: true,
+    capacity: true,
+    description: true,
+    image: true,
+    amenities: true,
+    isActive: true,
+    createdById: true,
+    createdAt: true,
+    updatedAt: true,
+    ...(hasImagePublicId ? { imagePublicId: true } : {}),
+  };
+}
+
+async function getOptionalVenueImageData(input: { image?: string | null; imagePublicId?: string | null }): Promise<Record<string, string | null>> {
+  const [hasImage, hasImagePublicId] = await Promise.all([
+    supportsVenueDatabaseField('image'),
+    supportsVenueDatabaseField('imagePublicId'),
+  ]);
+
+  return {
+    ...(hasImage && input.image !== undefined ? { image: input.image } : {}),
+    ...(hasImagePublicId && input.imagePublicId !== undefined ? { imagePublicId: input.imagePublicId } : {}),
+  };
+}
+
 function normalizeText(value: string): string {
   return value.trim().replace(/\s+/g, ' ');
 }
 
-function normalizeVenuePayload<T extends { name?: string; location?: string; address?: string; description?: string; image?: string; amenities?: string[] }>(
+function normalizeVenuePayload<T extends { name?: string; location?: string; address?: string; description?: string; image?: string; imagePublicId?: string; amenities?: string[] }>(
   payload: T,
 ): T {
   return {
@@ -33,6 +120,7 @@ function normalizeVenuePayload<T extends { name?: string; location?: string; add
     ...(payload.address !== undefined ? { address: payload.address ? normalizeText(payload.address) : undefined } : {}),
     ...(payload.description !== undefined ? { description: payload.description ? payload.description.trim() : undefined } : {}),
     ...(payload.image !== undefined ? { image: payload.image ? payload.image.trim() : undefined } : {}),
+    ...(payload.imagePublicId !== undefined ? { imagePublicId: payload.imagePublicId ? payload.imagePublicId.trim() : undefined } : {}),
     ...(payload.amenities !== undefined
       ? {
           amenities: Array.from(new Set(payload.amenities.map((item) => normalizeText(item)).filter(Boolean))),
@@ -41,7 +129,7 @@ function normalizeVenuePayload<T extends { name?: string; location?: string; add
   };
 }
 
-function toVenueDto(venue: Venue): VenueDto {
+function toVenueDto(venue: VenueRecord): VenueDto {
   return {
     id: venue.id,
     name: venue.name,
@@ -58,8 +146,11 @@ function toVenueDto(venue: Venue): VenueDto {
   };
 }
 
-async function ensureVenueExists(id: string): Promise<Venue> {
-  const venue = await getVenueDelegate().findUnique({ where: { id } });
+async function ensureVenueExists(id: string): Promise<VenueRecord> {
+  const venue = (await getVenueDelegate().findUnique({
+    where: { id },
+    select: (await getVenueSelect()) as never,
+  })) as VenueRecord | null;
 
   if (!venue) {
     throw new AppError('Venue not found', 404);
@@ -75,6 +166,9 @@ async function assertVenueUniqueness(name: string, location: string, excludeId?:
       location: { equals: location, mode: 'insensitive' },
       ...(excludeId ? { NOT: { id: excludeId } } : {}),
     },
+    select: {
+      id: true,
+    },
   });
 
   if (existingVenue) {
@@ -86,10 +180,17 @@ export async function createVenue(payload: CreateVenueInput): Promise<VenueDto> 
   const venueDelegate = getVenueDelegate();
   const normalizedPayload = normalizeVenuePayload(payload);
   await assertVenueUniqueness(normalizedPayload.name, normalizedPayload.location);
+  const optionalImageData = await getOptionalVenueImageData({
+    image: normalizedPayload.image ?? null,
+    imagePublicId: normalizedPayload.imagePublicId ?? null,
+  });
 
   const existingName = await venueDelegate.findFirst({
     where: {
       name: { equals: normalizedPayload.name, mode: 'insensitive' },
+    },
+    select: {
+      id: true,
     },
   });
 
@@ -104,14 +205,15 @@ export async function createVenue(payload: CreateVenueInput): Promise<VenueDto> 
       address: normalizedPayload.address,
       capacity: normalizedPayload.capacity,
       description: normalizedPayload.description,
-      image: normalizedPayload.image,
+      ...optionalImageData,
       amenities: normalizedPayload.amenities ?? [],
       isActive: normalizedPayload.isActive ?? true,
       createdById: normalizedPayload.createdById,
     },
+    select: (await getVenueSelect()) as never,
   });
 
-  return toVenueDto(venue);
+  return toVenueDto(venue as VenueRecord);
 }
 
 export async function getVenues(query: VenueListQuery): Promise<PaginatedVenuesData> {
@@ -135,6 +237,7 @@ export async function getVenues(query: VenueListQuery): Promise<PaginatedVenuesD
   const [items, totalItems] = await Promise.all([
     venueDelegate.findMany({
       where: whereClause,
+      select: (await getVenueSelect()) as never,
       orderBy: [{ createdAt: 'desc' }],
       skip,
       take: query.limit,
@@ -143,7 +246,7 @@ export async function getVenues(query: VenueListQuery): Promise<PaginatedVenuesD
   ]);
 
   return {
-    venues: items.map(toVenueDto),
+    venues: (items as VenueRecord[]).map(toVenueDto),
     hasMore: skip + items.length < totalItems,
     pagination: {
       total: totalItems,
@@ -175,12 +278,21 @@ export async function updateVenue(id: string, payload: UpdateVenueInput): Promis
         name: { equals: normalizedPayload.name, mode: 'insensitive' },
         NOT: { id },
       },
+      select: {
+        id: true,
+      },
     });
 
     if (existingName) {
       throw new AppError('Venue name must be unique', 409);
     }
   }
+
+  const isImageChanging = normalizedPayload.image !== undefined && normalizedPayload.image !== existingVenue.image;
+  const nextImagePublicId = normalizedPayload.image !== undefined ? normalizedPayload.imagePublicId ?? null : existingVenue.imagePublicId;
+  const optionalImageData = await getOptionalVenueImageData({
+    ...(normalizedPayload.image !== undefined ? { image: normalizedPayload.image ?? null, imagePublicId: nextImagePublicId } : {}),
+  });
 
   const venue = await venueDelegate.update({
     where: { id },
@@ -190,13 +302,18 @@ export async function updateVenue(id: string, payload: UpdateVenueInput): Promis
       ...(normalizedPayload.address !== undefined ? { address: normalizedPayload.address ?? null } : {}),
       ...(normalizedPayload.capacity !== undefined ? { capacity: normalizedPayload.capacity } : {}),
       ...(normalizedPayload.description !== undefined ? { description: normalizedPayload.description ?? null } : {}),
-      ...(normalizedPayload.image !== undefined ? { image: normalizedPayload.image ?? null } : {}),
+      ...optionalImageData,
       ...(normalizedPayload.amenities !== undefined ? { amenities: normalizedPayload.amenities } : {}),
       ...(normalizedPayload.isActive !== undefined ? { isActive: normalizedPayload.isActive } : {}),
     },
+    select: (await getVenueSelect()) as never,
   });
 
-  return toVenueDto(venue);
+  if (isImageChanging && existingVenue.imagePublicId && existingVenue.imagePublicId !== nextImagePublicId) {
+    await deleteFromCloudinary(existingVenue.imagePublicId);
+  }
+
+  return toVenueDto(venue as VenueRecord);
 }
 
 export async function deactivateVenue(id: string): Promise<VenueDto> {
@@ -205,9 +322,10 @@ export async function deactivateVenue(id: string): Promise<VenueDto> {
   const venue = await venueDelegate.update({
     where: { id },
     data: { isActive: false },
+    select: (await getVenueSelect()) as never,
   });
 
-  return toVenueDto(venue);
+  return toVenueDto(venue as VenueRecord);
 }
 
 export async function toggleVenueStatus(id: string): Promise<VenueDto> {
@@ -216,9 +334,10 @@ export async function toggleVenueStatus(id: string): Promise<VenueDto> {
   const venue = await venueDelegate.update({
     where: { id },
     data: { isActive: !existingVenue.isActive },
+    select: (await getVenueSelect()) as never,
   });
 
-  return toVenueDto(venue);
+  return toVenueDto(venue as VenueRecord);
 }
 
 export async function getVenueAvailability(venueId: string, dateRange: VenueAvailabilityQuery) {

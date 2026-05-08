@@ -23,6 +23,11 @@ type BookingSchedule = {
   endTime?: string | null;
 };
 
+type VenueBookingVenueRecord = Pick<
+  Venue,
+  'id' | 'name' | 'location' | 'address' | 'capacity' | 'description' | 'image' | 'amenities' | 'isActive' | 'createdById' | 'createdAt' | 'updatedAt'
+>;
+
 function getVenueDelegate(executor: PrismaExecutor = prisma) {
   if (!('venue' in executor) || !executor.venue) {
     throw new AppError('Venue model is not available in the Prisma client. Run Prisma generate and restart the server.', 500);
@@ -47,8 +52,26 @@ function getEventDelegate(executor: PrismaExecutor = prisma) {
   return executor.event;
 }
 
-async function ensureVenueExists(venueId: string, executor: PrismaExecutor = prisma): Promise<Venue> {
-  const venue = await getVenueDelegate(executor).findUnique({ where: { id: venueId } });
+async function ensureVenueExists(venueId: string, executor: PrismaExecutor = prisma): Promise<VenueBookingVenueRecord> {
+  const venue = await getVenueDelegate(executor).findUnique({
+    where: { id: venueId },
+    // Keep this select explicit so environments that have not applied the Cloudinary venue migration
+    // do not implicitly query the new imagePublicId column.
+    select: {
+      id: true,
+      name: true,
+      location: true,
+      address: true,
+      capacity: true,
+      description: true,
+      image: true,
+      amenities: true,
+      isActive: true,
+      createdById: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
 
   if (!venue) {
     throw new AppError('Venue not found', 404);
