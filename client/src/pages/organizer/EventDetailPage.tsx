@@ -206,7 +206,7 @@ function EventDetailPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">{event.category}</p>
               <h1 className="mt-3 text-3xl font-semibold text-slate-950">{event.title}</h1>
             </div>
-            {isPrivateWorkspace ? <EventStatusBadge status={event.lifecycleStatus} /> : null}
+            {isPrivateWorkspace ? <EventStatusBadge status={event.status} lifecycleStatus={event.lifecycleStatus} /> : null}
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
             {canManageEvent ? (
@@ -407,7 +407,7 @@ function EventDetailPage() {
         <Modal
           eyebrow="Delete Event"
           title="Delete this event?"
-          description="This action permanently removes the event and its managed reservation links."
+          description="Deleting this event will permanently remove all event details and related entries."
           onClose={() => setShowDeleteModal(false)}
           footer={
             <>
@@ -419,7 +419,13 @@ function EventDetailPage() {
               </Button>
             </>
           }
-        />
+        >
+          <div className="space-y-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700">
+            <p className="font-semibold text-rose-900">This cannot be undone.</p>
+            <p>After you confirm, this event and all related data will be deleted permanently.</p>
+            <p>Included in deletion: attendee tickets, attendee registrations, and venue booking entries linked to this event.</p>
+          </div>
+        </Modal>
       ) : null}
       {showBookingModal ? <TicketBookingModal event={event} onClose={() => setShowBookingModal(false)} onBooked={(booking) => void handleTicketBooked(booking)} /> : null}
       {toast ? (

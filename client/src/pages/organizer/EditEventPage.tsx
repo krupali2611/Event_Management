@@ -88,7 +88,7 @@ function EditEventPage() {
         <Card className="rounded-xl p-4 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <EventStatusBadge status={event.lifecycleStatus} />
+              <EventStatusBadge status={event.status} lifecycleStatus={event.lifecycleStatus} />
               {event.status === 'PUBLISHED' ? (
                 <Button variant="danger" disabled={submitting} onClick={() => setShowCancelModal(true)}>
                   Cancel Event

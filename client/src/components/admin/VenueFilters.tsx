@@ -55,8 +55,9 @@ function VenueFilters({
           <div className="relative">
             <Users className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
-              type="number"
-              min="1"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={filters.minCapacity}
               onChange={(event) => onCapacityChange(event.target.value)}
               placeholder="150"

@@ -183,6 +183,46 @@ export async function checkAvailabilityInTransaction(
   input: CheckAvailabilityInput,
 ): Promise<BookingAvailabilityResult> {
   const { startDate, endDate } = validateBookingDateRange(input.startDate, input.endDate);
+  const conflictingEvents = await getEventDelegate(executor).findMany({
+    where: {
+      venueId: input.venueId,
+      status: { not: 'CANCELLED' },
+      startDate: { lte: endDate },
+      endDate: { gte: startDate },
+      ...(input.eventId ? { NOT: { id: input.eventId } } : {}),
+    },
+    select: {
+      id: true,
+      startDate: true,
+      endDate: true,
+      startTime: true,
+      endTime: true,
+    },
+  });
+
+  const conflictingEvent = conflictingEvents.find((event) =>
+    schedulesOverlap(
+      {
+        startDate: event.startDate,
+        endDate: event.endDate,
+        startTime: event.startTime,
+        endTime: event.endTime,
+      },
+      {
+        startDate,
+        endDate,
+        startTime: input.startTime ?? null,
+        endTime: input.endTime ?? null,
+      },
+    ),
+  );
+
+  if (conflictingEvent) {
+    return {
+      available: false,
+    };
+  }
+
   const conflictingBookings = await getVenueBookingDelegate(executor).findMany({
     where: {
       venueId: input.venueId,

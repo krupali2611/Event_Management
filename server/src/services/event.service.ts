@@ -93,6 +93,41 @@ function getTicketBookingDelegate(executor: PrismaExecutor = prisma) {
   return executor.ticketBooking;
 }
 
+function getRegistrationDelegate(executor: PrismaExecutor = prisma) {
+  if (!('registration' in executor) || !executor.registration) {
+    throw new AppError('Registration model is not available in the Prisma client. Run Prisma generate and restart the server.', 500);
+  }
+
+  return executor.registration;
+}
+
+async function cancelTicketBookingsForEventInTransaction(executor: PrismaExecutor, eventId: string): Promise<void> {
+  await getTicketBookingDelegate(executor).updateMany({
+    where: {
+      eventId,
+      bookingStatus: { not: 'CANCELLED' },
+    },
+    data: {
+      bookingStatus: 'CANCELLED',
+      cancelledAt: new Date(),
+    },
+  });
+}
+
+async function deleteEventRelationsInTransaction(executor: PrismaExecutor, eventId: string): Promise<void> {
+  await getTicketBookingDelegate(executor).deleteMany({
+    where: { eventId },
+  });
+
+  await getRegistrationDelegate(executor).deleteMany({
+    where: { eventId },
+  });
+
+  await getVenueBookingDelegate(executor).deleteMany({
+    where: { eventId },
+  });
+}
+
 function getEventModelFieldNames(): Set<string> {
   const prismaMeta = Prisma as unknown as {
     dmmf?: {
@@ -453,6 +488,10 @@ export function getEventStatus(event: Pick<Event, 'status' | 'startDate' | 'endD
   return 'UPCOMING';
 }
 
+function isEventVisibleToAttendees(event: Pick<Event, 'status' | 'startDate' | 'endDate' | 'startTime' | 'endTime'>): boolean {
+  return event.status === 'PUBLISHED' && getEventStatus(event) === 'UPCOMING';
+}
+
 function ensureValidDateRange(startDate: Date, endDate: Date): void {
   if (startDate.getTime() > endDate.getTime()) {
     throw new AppError('Start date must be on or before end date', 400);
@@ -494,7 +533,7 @@ function canManageAllEvents(user: AuthenticatedUser): boolean {
   return user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
 }
 
-async function ensurePublishedVenueConflictFree(input: {
+async function ensureVenueScheduleConflictFree(input: {
   executor?: PrismaExecutor;
   eventId?: string;
   venueId: string;
@@ -506,7 +545,7 @@ async function ensurePublishedVenueConflictFree(input: {
   const candidateEvents = await getEventDelegate(input.executor).findMany({
     where: {
       venueId: input.venueId,
-      status: 'PUBLISHED',
+      status: { not: 'CANCELLED' },
       ...(input.eventId ? { NOT: { id: input.eventId } } : {}),
       startDate: { lte: input.endDate },
       endDate: { gte: input.startDate },
@@ -560,7 +599,7 @@ async function reserveVenueForPublishedEvent(eventId: string, input: {
   endTime?: string | null;
   createdById?: string;
 }): Promise<void> {
-  await ensurePublishedVenueConflictFree({
+  await ensureVenueScheduleConflictFree({
     executor: input.executor,
     eventId,
     venueId: input.venueId,
@@ -602,7 +641,7 @@ async function syncPublishedEventVenueBooking(
     return;
   }
 
-  await ensurePublishedVenueConflictFree({
+  await ensureVenueScheduleConflictFree({
     executor,
     eventId,
     venueId: nextState.venueId,
@@ -774,7 +813,7 @@ async function ensureEventAccess(id: string, user: AuthenticatedUser): Promise<E
     return event;
   }
 
-  if (user.role === 'ATTENDEE' && event.status === 'PUBLISHED' && getEventStatus(event) === 'UPCOMING') {
+  if (user.role === 'ATTENDEE' && isEventVisibleToAttendees(event)) {
     return event;
   }
 
@@ -811,6 +850,17 @@ export async function createEvent(payload: CreateEventInput, actor: Authenticate
   const createdEvent = await withEventSchemaRetry(() =>
     prisma.$transaction(async (transaction) => {
       await validateVenueCapacity(normalizedPayload.venueId, normalizedPayload.attendeeLimit, transaction);
+      if (normalizedPayload.venueId) {
+        await ensureVenueScheduleConflictFree({
+          executor: transaction,
+          venueId: normalizedPayload.venueId,
+          startDate,
+          endDate,
+          startTime: normalizedPayload.startTime ?? null,
+          endTime: normalizedPayload.endTime ?? null,
+        });
+      }
+
       const [optionalImageData, optionalScalarData] = await Promise.all([
         getOptionalEventImageData({
           bannerImage: normalizedPayload.bannerImage ?? null,
@@ -899,7 +949,7 @@ export async function getEvents(query: EventListQuery, user: AuthenticatedUser):
     }
   } else {
     whereClause.status = 'PUBLISHED';
-    andConditions.push({ startDate: { gt: new Date() } });
+    andConditions.push({ endDate: { gte: getStartOfDay(new Date()) } });
   }
 
   if (query.date) {
@@ -915,33 +965,46 @@ export async function getEvents(query: EventListQuery, user: AuthenticatedUser):
     whereClause.AND = andConditions;
   }
 
+  const isAttendeeQuery = user.role === 'ATTENDEE';
   const skip = (query.page - 1) * query.limit;
-  const [items, totalItems] = await Promise.all([
-    getEventDelegate().findMany({
-      where: whereClause,
-      select: (await getEventSelect(true)) as never,
-      orderBy: [{ startDate: 'asc' }, { createdAt: 'desc' }],
-      skip,
-      take: query.limit,
-    }),
-    getEventDelegate().count({ where: whereClause }),
-  ]);
+  const [items, totalItems] = isAttendeeQuery
+    ? await Promise.all([
+        getEventDelegate().findMany({
+          where: whereClause,
+          select: (await getEventSelect(true)) as never,
+          orderBy: [{ startDate: 'asc' }, { createdAt: 'desc' }],
+        }),
+        Promise.resolve(0),
+      ])
+    : await Promise.all([
+        getEventDelegate().findMany({
+          where: whereClause,
+          select: (await getEventSelect(true)) as never,
+          orderBy: [{ startDate: 'asc' }, { createdAt: 'desc' }],
+          skip,
+          take: query.limit,
+        }),
+        getEventDelegate().count({ where: whereClause }),
+      ]);
 
   const eventsWithMetrics = await attachTicketMetrics(items as EventRecord[]);
+  const attendeeVisibleEvents = isAttendeeQuery ? eventsWithMetrics.filter(isEventVisibleToAttendees) : eventsWithMetrics;
+  const paginatedEvents = isAttendeeQuery ? attendeeVisibleEvents.slice(skip, skip + query.limit) : attendeeVisibleEvents;
+  const resolvedTotalItems = isAttendeeQuery ? attendeeVisibleEvents.length : totalItems;
 
   return {
-    events: eventsWithMetrics.map(toEventDto),
+    events: paginatedEvents.map(toEventDto),
     pagination: {
-      total: totalItems,
+      total: resolvedTotalItems,
       page: query.page,
       limit: query.limit,
-      totalPages: Math.max(1, Math.ceil(totalItems / query.limit)),
+      totalPages: Math.max(1, Math.ceil(resolvedTotalItems / query.limit)),
     },
   };
 }
 
 export async function getPublicEvents(query: EventListQuery): Promise<PaginatedEventsData> {
-  const andConditions: Prisma.EventWhereInput[] = [{ startDate: { gt: new Date() } }];
+  const andConditions: Prisma.EventWhereInput[] = [{ endDate: { gte: getStartOfDay(new Date()) } }];
   const whereClause: Prisma.EventWhereInput = {
     status: 'PUBLISHED',
     ...(query.search
@@ -966,21 +1029,19 @@ export async function getPublicEvents(query: EventListQuery): Promise<PaginatedE
   whereClause.AND = andConditions;
 
   const skip = (query.page - 1) * query.limit;
-  const [items, totalItems] = await Promise.all([
-    getEventDelegate().findMany({
-      where: whereClause,
-      select: (await getEventSelect(true)) as never,
-      orderBy: [{ startDate: 'asc' }, { createdAt: 'desc' }],
-      skip,
-      take: query.limit,
-    }),
-    getEventDelegate().count({ where: whereClause }),
-  ]);
+  const items = await getEventDelegate().findMany({
+    where: whereClause,
+    select: (await getEventSelect(true)) as never,
+    orderBy: [{ startDate: 'asc' }, { createdAt: 'desc' }],
+  });
 
   const eventsWithMetrics = await attachTicketMetrics(items as EventRecord[]);
+  const upcomingEvents = eventsWithMetrics.filter(isEventVisibleToAttendees);
+  const paginatedEvents = upcomingEvents.slice(skip, skip + query.limit);
+  const totalItems = upcomingEvents.length;
 
   return {
-    events: eventsWithMetrics.map(toEventDto),
+    events: paginatedEvents.map(toEventDto),
     pagination: {
       total: totalItems,
       page: query.page,
@@ -1009,7 +1070,7 @@ export async function getPublicEventById(id: string): Promise<EventDto> {
     where: {
       id,
       status: 'PUBLISHED',
-      startDate: { gt: new Date() },
+      endDate: { gte: getStartOfDay(new Date()) },
     },
     select: (await getEventSelect(true)) as never,
   })) as EventRecord | null;
@@ -1018,7 +1079,13 @@ export async function getPublicEventById(id: string): Promise<EventDto> {
     throw new AppError('Event not found', 404);
   }
 
-  return toEventDto((await attachTicketMetrics([event]))[0]!);
+  const resolvedEvent = (await attachTicketMetrics([event]))[0]!;
+
+  if (!isEventVisibleToAttendees(resolvedEvent)) {
+    throw new AppError('Event not found', 404);
+  }
+
+  return toEventDto(resolvedEvent);
 }
 
 export async function updateEvent(id: string, payload: UpdateEventInput, user: AuthenticatedUser): Promise<EventDto> {
@@ -1107,6 +1174,18 @@ export async function updateEvent(id: string, payload: UpdateEventInput, user: A
   await withEventSchemaRetry(() =>
     prisma.$transaction(async (transaction) => {
       await validateVenueCapacity(nextVenueId, nextAttendeeLimit, transaction);
+
+      if (nextVenueId && (scheduleChanged || venueChanged)) {
+        await ensureVenueScheduleConflictFree({
+          executor: transaction,
+          eventId: id,
+          venueId: nextVenueId,
+          startDate: nextStartDate,
+          endDate: nextEndDate,
+          startTime: nextStartTime,
+          endTime: nextEndTime,
+        });
+      }
 
       if (existingEvent.status === 'PUBLISHED' && (scheduleChanged || venueChanged)) {
         await syncPublishedEventVenueBooking(transaction, id, existingEvent, {
@@ -1220,6 +1299,7 @@ async function updateEventStatusInTransaction(
   }
 
   if (currentEvent.status === 'PUBLISHED' && payload.status === 'CANCELLED') {
+    await cancelTicketBookingsForEventInTransaction(transaction, id);
     await cancelBookingsForEventInTransaction(transaction, id);
   }
 
@@ -1241,9 +1321,7 @@ export async function deleteEvent(id: string, user: AuthenticatedUser): Promise<
   }
 
   await prisma.$transaction(async (transaction) => {
-    if (event.venueId) {
-      await cancelBookingsForEventInTransaction(transaction, id);
-    }
+    await deleteEventRelationsInTransaction(transaction, id);
 
     await getEventDelegate(transaction).delete({
       where: { id },

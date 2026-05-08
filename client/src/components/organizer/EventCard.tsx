@@ -69,7 +69,7 @@ function EventCard({ event, stats }: { event: EventItem; stats?: TicketEventStat
         ) : null}
 
         <div className="absolute left-4 top-4 z-20">
-          <EventStatusBadge status={event.lifecycleStatus} compact />
+          <EventStatusBadge status={event.status} lifecycleStatus={event.lifecycleStatus} compact />
         </div>
 
         <div className="absolute right-4 top-4 z-20 flex gap-2 opacity-100 transition-all duration-200 sm:translate-y-2 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100">

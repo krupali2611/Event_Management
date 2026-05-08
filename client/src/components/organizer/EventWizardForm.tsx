@@ -12,6 +12,26 @@ import type { BookingAvailability } from '@/types/venue-booking.types';
 import type { Venue } from '@/types/venue.types';
 import { getApiErrorMessage } from '@/utils/getApiErrorMessage';
 
+function requiredPositiveInteger(fieldLabel: string) {
+  return z
+    .string()
+    .trim()
+    .min(1, `${fieldLabel} is required`)
+    .refine((value) => /^\d+$/.test(value), `${fieldLabel} must be a valid number`)
+    .transform((value) => Number(value))
+    .refine((value) => value >= 1, `${fieldLabel} must be greater than 0`);
+}
+
+function requiredNonNegativeNumber(fieldLabel: string) {
+  return z
+    .string()
+    .trim()
+    .min(1, `${fieldLabel} is required`)
+    .refine((value) => /^\d+(\.\d+)?$/.test(value), `${fieldLabel} must be a valid number`)
+    .transform((value) => Number(value))
+    .refine((value) => value >= 0, `${fieldLabel} cannot be negative`);
+}
+
 function getTomorrowDateValue(): string {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -24,12 +44,12 @@ const eventFormSchema = z
     title: z.string().trim().min(1, 'Title is required'),
     description: z.string().trim().optional(),
     category: z.string().trim().min(1, 'Category is required'),
-    ticketPrice: z.number().min(0, 'Ticket price cannot be negative'),
+    ticketPrice: requiredNonNegativeNumber('Ticket price'),
     startDate: z.string().min(1, 'Start date is required'),
     endDate: z.string().min(1, 'End date is required'),
     startTime: z.string().optional(),
     endTime: z.string().optional(),
-    attendeeLimit: z.number().int().min(1, 'Attendee limit must be greater than 0'),
+    attendeeLimit: requiredPositiveInteger('Attendee limit'),
     venueId: z.string().trim().min(1, 'Venue selection is required'),
     status: z.enum(['DRAFT', 'PUBLISHED', 'CANCELLED']),
   })
@@ -51,23 +71,24 @@ const eventFormSchema = z
   });
 
 export type EventWizardValues = z.output<typeof eventFormSchema>;
+type EventWizardInput = z.input<typeof eventFormSchema>;
 
 interface NewGalleryPreviewItem {
   file: File;
   previewUrl: string;
 }
 
-function toDefaultValues(initialEvent?: EventItem): EventWizardValues {
+function toDefaultValues(initialEvent?: EventItem): EventWizardInput {
   return {
     title: initialEvent?.title ?? '',
     description: initialEvent?.description ?? '',
     category: initialEvent?.category ?? '',
-    ticketPrice: initialEvent?.ticketPrice ?? 0,
+    ticketPrice: initialEvent?.ticketPrice?.toString() ?? '0',
     startDate: initialEvent?.startDate ? initialEvent.startDate.slice(0, 10) : '',
     endDate: initialEvent?.endDate ? initialEvent.endDate.slice(0, 10) : '',
     startTime: initialEvent?.startTime ?? '',
     endTime: initialEvent?.endTime ?? '',
-    attendeeLimit: initialEvent?.attendeeLimit ?? 1,
+    attendeeLimit: initialEvent?.attendeeLimit?.toString() ?? '',
     venueId: initialEvent?.venueId ?? '',
     status: initialEvent?.status ?? 'DRAFT',
   };
@@ -110,7 +131,7 @@ function EventWizardForm({
     setError,
     clearErrors,
     formState: { errors },
-  } = useForm<EventWizardValues>({
+  } = useForm<EventWizardInput, undefined, EventWizardValues>({
     resolver: zodResolver(eventFormSchema),
     defaultValues: toDefaultValues(initialEvent),
   });
@@ -118,7 +139,8 @@ function EventWizardForm({
   const values = watch();
   const selectedVenue = useMemo(() => venues.find((venue) => venue.id === values.venueId) ?? null, [venues, values.venueId]);
   const canCheckAvailability = Boolean(values.venueId && values.startDate && values.endDate);
-  const capacityExceeded = Boolean(selectedVenue && values.attendeeLimit > selectedVenue.capacity);
+  const attendeeLimitValue = typeof values.attendeeLimit === 'number' ? values.attendeeLimit : Number(values.attendeeLimit);
+  const capacityExceeded = Boolean(selectedVenue && Number.isFinite(attendeeLimitValue) && attendeeLimitValue > selectedVenue.capacity);
   const attendeeHelperText = selectedVenue ? `Max allowed: ${selectedVenue.capacity}` : 'Select a venue to see the maximum allowed attendees.';
   const isVenueAvailable = availability?.available === true;
   const isSubmitDisabled = submitting || !values.venueId || capacityExceeded || !isVenueAvailable;
@@ -404,18 +426,25 @@ function EventWizardForm({
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700">Attendee Limit</label>
-                  <Input {...register('attendeeLimit', { valueAsNumber: true })} className="px-3 py-2 text-sm" type="number" min={1} />
+                  <Input
+                    {...register('attendeeLimit')}
+                    className="px-3 py-2 text-sm"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    placeholder="Enter attendee limit"
+                  />
                   <p className={`mt-1 text-xs ${capacityExceeded ? 'text-rose-600' : 'text-slate-500'}`}>{attendeeHelperText}</p>
                   <FieldError message={errors.attendeeLimit?.message} />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700">Ticket Price</label>
                   <Input
-                    {...register('ticketPrice', { valueAsNumber: true })}
+                    {...register('ticketPrice')}
                     className="px-3 py-2 text-sm"
-                    type="number"
-                    min={0}
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*[.]?[0-9]*"
                     placeholder="Enter ticket price"
                   />
                   <FieldError message={errors.ticketPrice?.message} />

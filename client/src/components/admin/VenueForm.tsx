@@ -14,7 +14,13 @@ const venueFormSchema = z.object({
   name: z.string().trim().min(1, 'Venue name is required'),
   location: z.string().trim().min(1, 'Location is required'),
   address: z.string().trim().optional(),
-  capacity: z.coerce.number().int().min(1, 'Capacity must be greater than 0'),
+  capacity: z
+    .string()
+    .trim()
+    .min(1, 'Capacity is required')
+    .refine((value) => /^\d+$/.test(value), 'Capacity must be a valid number')
+    .transform((value) => Number(value))
+    .refine((value) => value >= 1, 'Capacity must be greater than 0'),
   description: z.string().trim().optional(),
   image: z.union([z.string().trim().url('Please enter a valid URL'), z.literal('')]).optional(),
   imagePublicId: z.string().trim().optional(),
@@ -32,12 +38,12 @@ interface VenueFormProps {
   onSubmit: (payload: VenuePayload) => Promise<void>;
 }
 
-function mapVenueToValues(initialVenue?: Venue): VenueFormValues {
+function mapVenueToValues(initialVenue?: Venue): VenueFormInput {
   return {
     name: initialVenue?.name ?? '',
     location: initialVenue?.location ?? '',
     address: initialVenue?.address ?? '',
-    capacity: initialVenue?.capacity ?? 1,
+    capacity: initialVenue?.capacity?.toString() ?? '',
     description: initialVenue?.description ?? '',
     image: initialVenue?.image ?? '',
     imagePublicId: '',
@@ -62,13 +68,14 @@ function VenueForm({ mode, initialVenue, submitting, onSubmit }: VenueFormProps)
   });
 
   const imageUrl = watch('image');
+  const capacityValue = Number(watch('capacity'));
   const previewVenue = useMemo<Venue>(
     () => ({
       id: initialVenue?.id ?? 'preview',
       name: watch('name')?.trim() || 'Venue name preview',
       location: watch('location')?.trim() || 'Location preview',
       address: watch('address')?.trim() || '',
-      capacity: Number(watch('capacity')) > 0 ? Number(watch('capacity')) : 1,
+      capacity: Number.isFinite(capacityValue) && capacityValue > 0 ? capacityValue : 0,
       description: watch('description')?.trim() || '',
       image: imageUrl?.trim() || '',
       amenities: (watch('amenities') ?? '')
@@ -80,7 +87,7 @@ function VenueForm({ mode, initialVenue, submitting, onSubmit }: VenueFormProps)
       createdAt: initialVenue?.createdAt ?? new Date().toISOString(),
       updatedAt: initialVenue?.updatedAt ?? new Date().toISOString(),
     }),
-    [imageUrl, initialVenue?.createdAt, initialVenue?.createdBy, initialVenue?.id, initialVenue?.updatedAt, watch],
+    [capacityValue, imageUrl, initialVenue?.createdAt, initialVenue?.createdBy, initialVenue?.id, initialVenue?.updatedAt, watch],
   );
 
   const submitForm = async (values: VenueFormValues): Promise<void> => {
@@ -152,7 +159,14 @@ function VenueForm({ mode, initialVenue, submitting, onSubmit }: VenueFormProps)
               <span className="text-sm font-semibold text-slate-700">Capacity</span>
               <div className="relative">
                 <Users className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input type="number" min="1" {...register('capacity')} className="pl-11" />
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="Enter capacity"
+                  {...register('capacity')}
+                  className="pl-11"
+                />
               </div>
               {errors.capacity ? <p className="text-sm text-rose-600">{errors.capacity.message}</p> : null}
             </label>

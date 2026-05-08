@@ -518,6 +518,10 @@ export async function getMyTicketBookings(user: AuthenticatedUser): Promise<Tick
   const bookings = await getTicketBookingDelegate().findMany({
     where: {
       userId: user.id,
+      bookingStatus: { not: BOOKING_STATUS.CANCELLED },
+      event: {
+        status: { not: 'CANCELLED' },
+      },
     },
     include: ticketBookingDetailInclude,
     orderBy: [{ createdAt: 'desc' }],
