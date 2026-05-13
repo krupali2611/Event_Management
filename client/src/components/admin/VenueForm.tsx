@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, LoaderCircle, MapPin, Save, Upload, Users } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import VenueCard from '@/components/admin/VenueCard';
@@ -36,6 +37,7 @@ interface VenueFormProps {
   initialVenue?: Venue;
   submitting: boolean;
   onSubmit: (payload: VenuePayload) => Promise<void>;
+  previewHeaderAction?: ReactNode;
 }
 
 function mapVenueToValues(initialVenue?: Venue): VenueFormInput {
@@ -52,7 +54,7 @@ function mapVenueToValues(initialVenue?: Venue): VenueFormInput {
   };
 }
 
-function VenueForm({ mode, initialVenue, submitting, onSubmit }: VenueFormProps) {
+function VenueForm({ mode, initialVenue, submitting, onSubmit, previewHeaderAction }: VenueFormProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -218,9 +220,12 @@ function VenueForm({ mode, initialVenue, submitting, onSubmit }: VenueFormProps)
 
         <aside className="space-y-5">
           <div className="rounded-[1.75rem] border border-slate-200 bg-white/95 p-5 shadow-panel">
-            <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <Eye className="h-4 w-4 text-brand-700" />
-              Live Preview
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <Eye className="h-4 w-4 text-brand-700" />
+                Live Preview
+              </div>
+              {previewHeaderAction}
             </div>
             <div className="mt-4">
               <VenueCard venue={previewVenue} preview />

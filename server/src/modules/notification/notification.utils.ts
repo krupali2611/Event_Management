@@ -91,6 +91,7 @@ export function toNotificationDto(notification: Notification) {
     message: notification.message,
     type: notification.type,
     isRead: notification.isRead,
+    readAt: notification.readAt,
     link: notification.link,
     metadata: notification.metadata,
     createdAt: notification.createdAt,

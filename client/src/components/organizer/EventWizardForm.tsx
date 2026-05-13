@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle2, ImagePlus, MapPin, Users, X } from 'lucide-react';
-import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import Button from '@/components/ui/Button';
@@ -108,12 +108,14 @@ function EventWizardForm({
   submitting,
   onSubmit,
   mode = 'create',
+  footerAction,
 }: {
   venues: Venue[];
   initialEvent?: EventItem;
   submitting: boolean;
   onSubmit: (payload: EventPayload) => Promise<void>;
   mode?: 'create' | 'edit';
+  footerAction?: ReactNode;
 }) {
   const tomorrowDate = useMemo(() => getTomorrowDateValue(), []);
   const [availability, setAvailability] = useState<BookingAvailability | null>(initialEvent?.venueId ? { available: true } : null);
@@ -509,7 +511,8 @@ function EventWizardForm({
             </div>
           </Card>
 
-          <div className="flex justify-end border-t border-slate-200 pt-4">
+          <div className="flex items-center justify-between gap-3 border-t border-slate-200 pt-4">
+            <div>{footerAction}</div>
             <Button type="submit" disabled={isSubmitDisabled}>
               {submitting ? 'Saving...' : initialEvent ? 'Update Event' : 'Create Event'}
             </Button>

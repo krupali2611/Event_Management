@@ -17,6 +17,7 @@ export interface NotificationItem {
   message: string;
   type: NotificationType;
   isRead: boolean;
+  readAt: string | null;
   link: string | null;
   metadata?: Record<string, unknown> | null;
   createdAt: string;

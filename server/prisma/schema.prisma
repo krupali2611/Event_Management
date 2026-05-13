@@ -66,6 +66,7 @@ model User {
   events         Event[]         @relation("OrganizerEvents")
   registrations  Registration[]
   ticketBookings TicketBooking[]
+  feedbacks      Feedback[]
   notifications  Notification[]
   notificationDispatchLogs NotificationDispatchLog[]
   venues         Venue[]         @relation("VenueCreator")
@@ -97,12 +98,30 @@ model Event {
   venueBookings  VenueBooking[]  @relation("EventVenueBookings")
   registrations  Registration[]
   ticketBookings TicketBooking[]
+  feedbacks      Feedback[]
 
   @@index([organizerId])
   @@index([venueId])
   @@index([category])
   @@index([status])
   @@index([startDate, endDate])
+}
+
+model Feedback {
+  id         String   @id @default(cuid())
+  eventId     String
+  attendeeId  String
+  rating      Int
+  review      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  attendee    User     @relation(fields: [attendeeId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, attendeeId])
+  @@index([eventId, createdAt])
+  @@index([attendeeId, createdAt])
+  @@index([rating])
 }
 
 model Registration {
@@ -206,6 +225,7 @@ model Notification {
   message   String
   type      NOTIFICATION_TYPE
   isRead    Boolean           @default(false)
+  readAt    DateTime?
   link      String?
   metadata  Json?
   createdAt DateTime          @default(now())
@@ -213,6 +233,7 @@ model Notification {
 
   @@index([userId, isRead, createdAt])
   @@index([userId, type, createdAt])
+  @@index([isRead, readAt])
 }
 
 model NotificationDispatchLog {

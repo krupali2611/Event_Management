@@ -5,7 +5,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import AuthShell from '@/components/auth/AuthShell';
 import { useAuth } from '@/hooks/useAuth';
-import type { UserRole } from '@/types/api';
+import { resolvePostLoginRedirect } from '@/utils/authRedirect';
 import { getApiErrorMessage } from '@/utils/getApiErrorMessage';
 
 const loginSchema = z.object({
@@ -14,18 +14,6 @@ const loginSchema = z.object({
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
-
-function getDefaultRouteForRole(role: UserRole): string {
-  switch (role) {
-    case 'SUPER_ADMIN':
-    case 'ADMIN':
-      return '/admin';
-    case 'ORGANIZER':
-      return '/organizer';
-    case 'ATTENDEE':
-      return '/';
-  }
-}
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -44,10 +32,8 @@ function LoginPage() {
     try {
       setSubmitError(null);
       const user = await login(values);
-      const redirectPath =
-        (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ??
-        getDefaultRouteForRole(user.role);
-      navigate(redirectPath, { replace: true });
+      const requestedPath = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
+      navigate(resolvePostLoginRedirect(user.role, requestedPath), { replace: true });
     } catch (error) {
       setSubmitError(getApiErrorMessage(error));
     }

@@ -1,9 +1,13 @@
-import { Filter, MapPin, Search, Users } from 'lucide-react';
+import { Filter, MapPin, Plus, Search, Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import Input from '@/components/ui/Input';
+import Button from '@/components/ui/Button';
 import type { VenueListFilters } from '@/types/venue.types';
 
 interface VenueFiltersProps {
   filters: VenueListFilters;
+  totalVenues?: number;
+  actionHref?: string;
   onSearchChange: (value: string) => void;
   onLocationChange: (value: string) => void;
   onCapacityChange: (value: string) => void;
@@ -12,6 +16,8 @@ interface VenueFiltersProps {
 
 function VenueFilters({
   filters,
+  totalVenues = 0,
+  actionHref = '/admin/venues/new',
   onSearchChange,
   onLocationChange,
   onCapacityChange,
@@ -19,9 +25,19 @@ function VenueFilters({
 }: VenueFiltersProps) {
   return (
     <div className="rounded-[1.75rem] border border-slate-200 bg-white/95 p-4 shadow-panel">
-      <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-700">
-        <Filter className="h-4 w-4 text-brand-700" />
-        Venue Filters
+      <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <Filter className="h-4 w-4 text-brand-700" />
+          Venue Filters
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center xl:justify-end">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            {totalVenues} venues
+          </div>
+          <Link to={actionHref} className="shrink-0">
+            <Button icon={<Plus className="h-4 w-4" />}>Add Venue</Button>
+          </Link>
+        </div>
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <label className="space-y-2">

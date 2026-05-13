@@ -1,5 +1,6 @@
-import { CalendarDays, MapPin, Receipt, Ticket } from 'lucide-react';
+import { ArrowLeft, CalendarDays, MapPin, Receipt, Ticket } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
@@ -93,30 +94,31 @@ function MyTicketsPage() {
         <div className="max-w-3xl">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-600">Attendee Tickets</p>
           <h2 className="mt-4 text-4xl font-bold tracking-tight text-slate-950">All your booked events in one place.</h2>
-          <p className="mt-3 text-base text-slate-600">
-            Review upcoming bookings, check ticket details, and cancel reservations before the event starts.
-          </p>
         </div>
-        <Button variant="secondary" onClick={() => void refresh()} disabled={loading}>
-          {loading ? 'Refreshing...' : 'Refresh Tickets'}
-        </Button>
+        <Link
+          to="/events"
+          className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-white px-4 py-2 text-sm font-semibold text-orange-700 transition hover:bg-orange-50"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Events
+        </Link>
       </div>
 
       {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
 
       {loading ? (
-        <div className="grid gap-5">
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {Array.from({ length: 3 }).map((_, index) => (
             <Card key={index} className="overflow-hidden p-0">
               <div className="h-2 animate-pulse bg-slate-200" />
-              <div className="grid gap-0 lg:grid-cols-[220px_minmax(0,1fr)]">
-                <div className="h-48 animate-pulse bg-slate-200 lg:h-full" />
-                <div className="space-y-4 p-5">
+              <div>
+                <div className="h-36 animate-pulse bg-slate-200" />
+                <div className="space-y-4 p-4">
                   <div className="h-6 w-40 animate-pulse rounded-full bg-slate-200" />
                   <div className="h-4 w-56 animate-pulse rounded-full bg-slate-200" />
-                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    {Array.from({ length: 4 }).map((__, innerIndex) => (
-                      <div key={innerIndex} className="h-24 animate-pulse rounded-2xl bg-slate-100" />
+                  <div className="grid gap-3">
+                    {Array.from({ length: 2 }).map((__, innerIndex) => (
+                      <div key={innerIndex} className="h-20 animate-pulse rounded-2xl bg-slate-100" />
                     ))}
                   </div>
                 </div>
@@ -136,7 +138,7 @@ function MyTicketsPage() {
         </Card>
       ) : null}
 
-      <div className="grid gap-5">
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {tickets.map((ticket) => (
           <TicketCard
             key={ticket.id}

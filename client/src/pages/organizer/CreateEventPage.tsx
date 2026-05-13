@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import EventWizardForm from '@/components/organizer/EventWizardForm';
+import Button from '@/components/ui/Button';
 import { createEvent, getVenues } from '@/services/api';
 import type { EventPayload } from '@/types/event.types';
 import type { Venue } from '@/types/venue.types';
@@ -52,7 +54,21 @@ function CreateEventPage() {
           No active venues found in the database. Add an active venue from admin venue management first.
         </div>
       ) : null}
-      {!loading && venues.length > 0 ? <EventWizardForm venues={venues} submitting={submitting} onSubmit={handleSubmit} mode="create" /> : null}
+      {!loading && venues.length > 0 ? (
+        <EventWizardForm
+          venues={venues}
+          submitting={submitting}
+          onSubmit={handleSubmit}
+          mode="create"
+          footerAction={
+            <Link to={eventsBasePath}>
+              <Button variant="primary" icon={<ArrowLeft className="h-4 w-4" />}>
+                Back to Events
+              </Button>
+            </Link>
+          }
+        />
+      ) : null}
     </section>
   );
 }

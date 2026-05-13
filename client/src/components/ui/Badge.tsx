@@ -2,6 +2,7 @@ import type { PropsWithChildren } from 'react';
 import type { UserRole } from '@/types/api';
 
 interface BadgeProps extends PropsWithChildren {
+  className?: string;
   color?: 'slate' | 'blue' | 'purple' | 'red' | 'green' | 'amber';
   role?: UserRole;
 }
@@ -40,11 +41,11 @@ function getColorClass(color: BadgeColor): string {
   }
 }
 
-function Badge({ children, color = 'slate', role }: BadgeProps) {
+function Badge({ children, className = '', color = 'slate', role }: BadgeProps) {
   const resolvedColor: BadgeColor = role ? getRoleColor(role) : color;
 
   return (
-    <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${getColorClass(resolvedColor)}`}>
+    <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${getColorClass(resolvedColor)} ${className}`}>
       {children ?? role}
     </span>
   );

@@ -57,14 +57,6 @@ function EditVenuePage() {
 
   return (
     <section className="space-y-5">
-      <div className="flex items-center justify-end gap-4">
-        <Link to="/admin/venues">
-          <Button variant="secondary" icon={<ArrowLeft className="h-4 w-4" />}>
-            Back to Venues
-          </Button>
-        </Link>
-      </div>
-
       {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
 
       {loading ? (
@@ -72,7 +64,19 @@ function EditVenuePage() {
           Loading venue details...
         </div>
       ) : venue ? (
-        <VenueForm mode="edit" initialVenue={venue} submitting={submitting} onSubmit={handleSubmit} />
+        <VenueForm
+          mode="edit"
+          initialVenue={venue}
+          submitting={submitting}
+          onSubmit={handleSubmit}
+          previewHeaderAction={
+            <Link to="/admin/venues">
+              <Button variant="primary" size="sm" className="rounded-xl px-4 py-2 text-xs font-semibold text-white" icon={<ArrowLeft className="h-3.5 w-3.5" />}>
+                Back to Venues
+              </Button>
+            </Link>
+          }
+        />
       ) : (
         <div className="rounded-[1.75rem] border border-amber-200 bg-amber-50 px-6 py-10 text-sm text-amber-800 shadow-panel">
           Venue record could not be loaded.

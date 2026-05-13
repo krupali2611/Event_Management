@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react';
+import { CalendarDays, IndianRupee, Plus, Search, Ticket } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import EventCard from '@/components/organizer/EventCard';
@@ -44,7 +44,32 @@ function OrganizerEventsPage() {
   const eventsBasePath = isAdminWorkspace ? '/admin/events' : '/organizer/events';
   const eventsLabel = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN' ? 'Total Events' : 'My Events';
   const hasMore = data.pagination.page < data.pagination.totalPages;
-  const filterKey = useMemo(() => JSON.stringify({ search: filters.search, date: filters.date, status: filters.status, limit: filters.limit }), [filters.date, filters.limit, filters.search, filters.status]);
+  const filterKey = useMemo(() => JSON.stringify({ search: filters.search, date: filters.date, status: filters.status }), [filters.date, filters.search, filters.status]);
+  const overview = useMemo(() => {
+    const now = Date.now();
+    const totals = Object.values(statsByEventId).reduce(
+      (accumulator, stat) => {
+        accumulator.bookings += stat.confirmedBookings;
+        accumulator.revenue += stat.totalRevenue;
+        return accumulator;
+      },
+      { bookings: 0, revenue: 0 },
+    );
+
+    return {
+      totalEvents: data.pagination.total,
+      upcomingEvents: data.events.filter((event) => new Date(event.startDate).getTime() >= now && event.status !== 'CANCELLED').length,
+      totalBookings: totals.bookings,
+      totalRevenue: totals.revenue,
+    };
+  }, [data.events, data.pagination.total, statsByEventId]);
+
+  const summaryCards = [
+    { label: eventsLabel, value: overview.totalEvents, helper: 'Across your current workspace', icon: CalendarDays, accent: 'from-violet-100 to-violet-50 text-violet-600' },
+    { label: 'Upcoming Events', value: overview.upcomingEvents, helper: 'Scheduled from visible results', icon: CalendarDays, accent: 'from-emerald-100 to-emerald-50 text-emerald-600' },
+    { label: 'Total Bookings', value: overview.totalBookings, helper: 'Confirmed attendee bookings', icon: Ticket, accent: 'from-amber-100 to-amber-50 text-amber-600' },
+    { label: 'Revenue', value: new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(overview.totalRevenue), helper: 'For loaded event analytics', icon: IndianRupee, accent: 'from-blue-100 to-blue-50 text-blue-600' },
+  ];
 
   useEffect(() => {
     void loadEvents({ ...filters, page: 1 }, false);
@@ -130,53 +155,67 @@ function OrganizerEventsPage() {
   };
 
   return (
-    <section className="space-y-4">
-      <Card className="rounded-xl p-4 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="text-sm font-medium text-slate-700">
-            <span className="text-2xl font-semibold text-slate-950">{data.pagination.total}</span> {eventsLabel}
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+    <section className="space-y-5">
+      <div className="grid gap-4 xl:grid-cols-4">
+        {summaryCards.map((card) => {
+          const Icon = card.icon;
+
+          return (
+            <Card key={card.label} className="rounded-[1.9rem] border border-white/70 bg-[var(--dashboard-surface-strong)] p-5 shadow-[var(--dashboard-shadow)] backdrop-blur">
+              <div className="flex items-center gap-4">
+                <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-[1.5rem] bg-gradient-to-br ${card.accent}`}>
+                  <Icon className="h-7 w-7" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-slate-500">{card.label}</p>
+                  <p className="mt-1 text-[1.9rem] font-semibold leading-none text-slate-950">{card.value}</p>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      <Card className="overflow-hidden rounded-[2rem] border border-white/70 bg-[var(--dashboard-surface)] p-4 shadow-[var(--dashboard-shadow)] backdrop-blur sm:p-5">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               value={filters.search}
               onChange={(event) => setFilters((current) => ({ ...current, page: 1, search: event.target.value }))}
               placeholder="Search events by name or category..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-brand-500 focus:bg-white sm:w-72"
+              className="min-w-0 w-full rounded-[1.3rem] border border-slate-200/80 bg-white/90 py-4 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-500"
             />
-            <Link to={`${eventsBasePath}/new`}>
-              <Button icon={<Plus className="h-4 w-4" />}>Create Event</Button>
+          </div>
+
+          <div className="flex flex-col gap-4 md:flex-row xl:w-auto">
+            <div className="relative md:w-[220px]">
+              <CalendarDays className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="date"
+                value={filters.date}
+                onChange={(event) => setFilters((current) => ({ ...current, page: 1, date: event.target.value }))}
+                className="w-full rounded-[1.3rem] border border-slate-200/80 bg-white/90 py-4 pl-11 pr-4 text-sm text-slate-900 outline-none transition focus:border-brand-500"
+              />
+            </div>
+
+            <select
+              value={filters.status}
+              onChange={(event) => setFilters((current) => ({ ...current, page: 1, status: event.target.value as EventListFilters['status'] }))}
+              className="rounded-[1.3rem] border border-slate-200/80 bg-white/90 px-4 py-4 text-sm text-slate-900 outline-none transition focus:border-brand-500 md:w-[190px]"
+            >
+              <option value="">All Status</option>
+              <option value="DRAFT">Draft</option>
+              <option value="PUBLISHED">Published</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+
+            <Link to={`${eventsBasePath}/new`} className="shrink-0">
+              <Button className="h-[58px] rounded-[1.3rem] px-6 shadow-[0_20px_40px_-24px_rgba(37,99,235,0.8)]" icon={<Plus className="h-4 w-4" />}>
+                Create Event
+              </Button>
             </Link>
           </div>
-        </div>
-      </Card>
-
-      <Card className="rounded-xl p-4 shadow-sm">
-        <div className="grid gap-3 md:grid-cols-3">
-          <input
-            type="date"
-            value={filters.date}
-            onChange={(event) => setFilters((current) => ({ ...current, page: 1, date: event.target.value }))}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-brand-500 focus:bg-white"
-          />
-          <select
-            value={filters.status}
-            onChange={(event) => setFilters((current) => ({ ...current, page: 1, status: event.target.value as EventListFilters['status'] }))}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-brand-500 focus:bg-white"
-          >
-            <option value="">All statuses</option>
-            <option value="DRAFT">Draft</option>
-            <option value="PUBLISHED">Published</option>
-            <option value="CANCELLED">Cancelled</option>
-          </select>
-          <select
-            value={filters.limit}
-            onChange={(event) => setFilters((current) => ({ ...current, page: 1, limit: Number(event.target.value) }))}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-brand-500 focus:bg-white"
-          >
-            <option value={9}>9 per page</option>
-            <option value={18}>18 per page</option>
-            <option value={27}>27 per page</option>
-          </select>
         </div>
       </Card>
 
@@ -185,7 +224,7 @@ function OrganizerEventsPage() {
       {loading ? <div className="rounded-xl border border-slate-200 bg-white px-4 py-6 text-sm text-slate-600">Loading events...</div> : null}
 
       {!loading ? (
-        <div className="grid gap-5 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-2 2xl:grid-cols-2">
           {data.events.map((event) => (
             <EventCard key={event.id} event={event} stats={statsByEventId[event.id]} />
           ))}
@@ -195,6 +234,7 @@ function OrganizerEventsPage() {
 
       {!loading && data.events.length > 0 ? <div ref={loadMoreRef} className="h-2" /> : null}
       {loadingMore ? <div className="rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600">Loading more events...</div> : null}
+      {!loading && !loadingMore && data.events.length > 0 && !hasMore ? <p className="py-2 text-center text-sm text-slate-500">No more events</p> : null}
     </section>
   );
 }

@@ -1,18 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import type { UserRole } from '@/types/api';
-
-function getDefaultRouteForRole(role: UserRole): string {
-  switch (role) {
-    case 'SUPER_ADMIN':
-    case 'ADMIN':
-      return '/admin';
-    case 'ORGANIZER':
-      return '/organizer';
-    case 'ATTENDEE':
-      return '/';
-  }
-}
+import { getDefaultRouteForRole } from '@/utils/authRedirect';
 
 function RoleHomeRedirect() {
   const { currentUser, isAuthenticated, loading } = useAuth();
@@ -28,10 +16,6 @@ function RoleHomeRedirect() {
   }
 
   if (isAuthenticated && currentUser) {
-    if (currentUser.role === 'ATTENDEE') {
-      return <Navigate to="/events" replace />;
-    }
-
     return <Navigate to={getDefaultRouteForRole(currentUser.role)} replace />;
   }
 

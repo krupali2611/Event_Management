@@ -4,11 +4,11 @@ import AdminLayout from '@/layouts/AdminLayout';
 import MainLayout from '@/layouts/MainLayout';
 import OrganizerLayout from '@/layouts/OrganizerLayout';
 import UserLayout from '@/layouts/UserLayout';
+import AuthModal from '@/components/auth/AuthModal';
 import ProtectedRoute from '@/routes/ProtectedRoute';
+import AuthRouteRedirect from '@/routes/AuthRouteRedirect';
 import RoleHomeRedirect from '@/routes/RoleHomeRedirect';
 
-const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
-const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
 const AdminDashboardPage = lazy(() => import('@/pages/admin/AdminDashboardPage'));
 const VenueManagementPage = lazy(() => import('@/pages/admin/VenueManagementPage'));
@@ -18,6 +18,7 @@ const EditVenuePage = lazy(() => import('@/pages/admin/EditVenuePage'));
 const UserManagementPage = lazy(() => import('@/pages/admin/UserManagementPage'));
 const UserDetailsPage = lazy(() => import('@/pages/admin/UserDetailsPage'));
 const VenueBookingsAdminPage = lazy(() => import('@/pages/admin/VenueBookingsAdminPage'));
+const FeedbackReviewsPage = lazy(() => import('@/pages/admin/FeedbackReviewsPage'));
 const AdminEventsPage = lazy(() => import('@/pages/organizer/OrganizerEventsPage'));
 const AdminCreateEventPage = lazy(() => import('@/pages/organizer/CreateEventPage'));
 const AdminEditEventPage = lazy(() => import('@/pages/organizer/EditEventPage'));
@@ -25,6 +26,7 @@ const AdminEventDetailPage = lazy(() => import('@/pages/organizer/EventDetailPag
 const OrganizerPage = lazy(() => import('@/pages/OrganizerPage'));
 const OrganizerEventsPage = lazy(() => import('@/pages/organizer/OrganizerEventsPage'));
 const VenueBookingPage = lazy(() => import('@/pages/organizer/VenueBookingPage'));
+const OrganizerFeedbackReviewsPage = lazy(() => import('@/pages/organizer/OrganizerFeedbackReviewsPage'));
 const CreateEventPage = lazy(() => import('@/pages/organizer/CreateEventPage'));
 const EditEventPage = lazy(() => import('@/pages/organizer/EditEventPage'));
 const EventDetailPage = lazy(() => import('@/pages/organizer/EventDetailPage'));
@@ -46,8 +48,8 @@ function AppRoutes() {
         <Route element={<MainLayout />}>
           <Route index element={<RoleHomeRedirect />} />
           <Route path="home" element={<Navigate to="/" replace />} />
-          <Route path="login" element={<LoginPage />} />
-          <Route path="register" element={<RegisterPage />} />
+          <Route path="login" element={<AuthRouteRedirect mode="login" />} />
+          <Route path="register" element={<AuthRouteRedirect mode="register" />} />
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']} />}>
@@ -65,10 +67,11 @@ function AppRoutes() {
             <Route path="admin/venues/:id" element={<VenueDetailsPage />} />
             <Route path="admin/venues/:id/edit" element={<EditVenuePage />} />
             <Route path="admin/venue-bookings" element={<VenueBookingsAdminPage />} />
+            <Route path="admin/feedback-reviews" element={<FeedbackReviewsPage />} />
           </Route>
         </Route>
 
-        <Route element={<ProtectedRoute allowedRoles={['ORGANIZER', 'ADMIN', 'SUPER_ADMIN']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['ORGANIZER']} />}>
           <Route element={<OrganizerLayout />}>
             <Route path="organizer" element={<OrganizerPage />} />
             <Route path="organizer/events" element={<OrganizerEventsPage />} />
@@ -77,6 +80,7 @@ function AppRoutes() {
             <Route path="organizer/events/:id/attendees" element={<EventAttendeesPage />} />
             <Route path="organizer/events/:id/edit" element={<EditEventPage />} />
             <Route path="organizer/venue-bookings" element={<VenueBookingPage />} />
+            <Route path="organizer/feedback-reviews" element={<OrganizerFeedbackReviewsPage />} />
           </Route>
         </Route>
 
@@ -98,6 +102,7 @@ function AppRoutes() {
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
+      <AuthModal />
     </Suspense>
   );
 }

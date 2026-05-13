@@ -4,17 +4,27 @@
 
 :root {
   color-scheme: light;
-  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Aptos', 'Trebuchet MS', 'Segoe UI', sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color: #0f172a;
   background:
-    radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 30%),
-    linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.16), transparent 28%),
+    radial-gradient(circle at left top, rgba(99, 102, 241, 0.12), transparent 24%),
+    linear-gradient(180deg, #f4f7fb 0%, #ebf1ff 52%, #f7f9fc 100%);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  --dashboard-sidebar: linear-gradient(180deg, #0b1730 0%, #081223 100%);
+  --dashboard-sidebar-border: rgba(255, 255, 255, 0.06);
+  --dashboard-surface: rgba(255, 255, 255, 0.84);
+  --dashboard-surface-strong: rgba(255, 255, 255, 0.96);
+  --dashboard-border: rgba(148, 163, 184, 0.24);
+  --dashboard-shadow: 0 32px 80px -36px rgba(15, 23, 42, 0.32);
+  --dashboard-primary: #2f64ff;
+  --dashboard-primary-dark: #1f4fe0;
+  --dashboard-muted: #64748b;
 }
 
 * {
@@ -26,10 +36,15 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background: transparent;
+  color: #0f172a;
 }
 
 #root {
   min-height: 100vh;
+}
+
+::selection {
+  background: rgba(47, 100, 255, 0.18);
 }
 
 button,

@@ -1,4 +1,4 @@
-import { BarChart3, Building2, CalendarDays, CalendarRange, Users } from 'lucide-react';
+import { BarChart3, Building2, CalendarDays, CalendarRange, MessageSquareQuote, Users } from 'lucide-react';
 import { useState } from 'react';
 import { matchPath, Outlet, useLocation } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -11,6 +11,7 @@ const items = [
   { to: '/admin/users', label: 'Users', icon: Users },
   { to: '/admin/venues', label: 'Venues', icon: Building2 },
   { to: '/admin/venue-bookings', label: 'Venue Booking', icon: CalendarRange },
+  { to: '/admin/feedback-reviews', label: 'All Feedback Review', icon: MessageSquareQuote },
 ];
 
 const headerTitleMap = [
@@ -26,11 +27,13 @@ const headerTitleMap = [
   { pattern: '/admin/venues/:id', title: 'Venue Details' },
   { pattern: '/admin/venues', title: 'Venues' },
   { pattern: '/admin/venue-bookings', title: 'Venue Bookings' },
+  { pattern: '/admin/feedback-reviews', title: 'All Feedback Reviews' },
 ];
 
 function AdminLayout() {
   const { currentUser } = useAuth();
   const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const defaultDashboardTitle = currentUser?.role === 'SUPER_ADMIN' ? 'Super Admin Dashboard' : 'Admin Dashboard';
   const currentTitle =
@@ -41,9 +44,33 @@ function AdminLayout() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <div className="flex min-h-screen">
-        <Sidebar items={items} role={currentUser?.role ?? 'ADMIN'} theme="light" onCollapseChange={setSidebarCollapsed} />
+        <Sidebar
+          items={items}
+          role={currentUser?.role ?? 'ADMIN'}
+          theme="light"
+          isOpen={sidebarOpen}
+          isDesktopCollapsed={sidebarCollapsed}
+          onOpenChange={setSidebarOpen}
+          onDesktopCollapseChange={setSidebarCollapsed}
+          onCollapseChange={setSidebarCollapsed}
+        />
         <div className={`flex min-w-0 flex-1 flex-col transition-[padding] duration-300 ${sidebarCollapsed ? 'lg:pl-24' : 'lg:pl-72'}`}>
-          <Navbar title={currentTitle} subtitle="Operations" theme="light" />
+          <Navbar
+            title={currentTitle}
+            subtitle="Operations"
+            theme="light"
+            sidebarOpen={sidebarOpen}
+            sidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={() => {
+              if (window.matchMedia('(min-width: 1024px)').matches) {
+                setSidebarCollapsed((current) => !current);
+                setSidebarOpen(true);
+                return;
+              }
+
+              setSidebarOpen((current) => !current);
+            }}
+          />
           <main className="flex-1 bg-[radial-gradient(circle_at_top_right,rgba(79,70,229,0.08),transparent_30%),linear-gradient(180deg,#f9fafb_0%,#eef2ff_100%)] px-4 py-6 sm:px-6 lg:px-8">
             <Outlet />
           </main>

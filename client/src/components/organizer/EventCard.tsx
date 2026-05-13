@@ -53,10 +53,15 @@ function EventCard({ event, stats }: { event: EventItem; stats?: TicketEventStat
   const location = useLocation();
   const eventsBasePath = location.pathname.startsWith('/admin') ? '/admin/events' : '/organizer/events';
   const eventImage = event.image ?? event.bannerImage ?? EVENT_FALLBACK_IMAGE;
+  const eventDate = new Date(event.startDate);
+  const eventTime = new Intl.DateTimeFormat('en-IN', {
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(eventDate);
 
   return (
-    <Card className="group overflow-hidden rounded-xl p-0 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
-      <div className="relative h-48 overflow-hidden bg-slate-100">
+    <Card className="group overflow-hidden rounded-[1.9rem] border border-white/70 bg-[var(--dashboard-surface-strong)] p-0 shadow-[var(--dashboard-shadow)] transition duration-300 hover:-translate-y-1.5">
+      <div className="relative h-56 overflow-hidden bg-slate-100">
         <Link to={`${eventsBasePath}/${event.id}`} aria-label={`Open ${event.title}`} className="absolute inset-0 z-10">
           <span className="sr-only">View Event</span>
         </Link>
@@ -68,18 +73,18 @@ function EventCard({ event, stats }: { event: EventItem; stats?: TicketEventStat
           </div>
         ) : null}
 
-        <div className="absolute left-4 top-4 z-20">
+        <div className="absolute left-5 top-5 z-20">
           <EventStatusBadge status={event.status} lifecycleStatus={event.lifecycleStatus} compact />
         </div>
 
-        <div className="absolute right-4 top-4 z-20 flex gap-2 opacity-100 transition-all duration-200 sm:translate-y-2 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100">
+        <div className="absolute right-5 top-5 z-20 flex gap-2 opacity-100 transition-all duration-200 sm:translate-y-2 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100">
           <IconAction tooltip="View Event">
             <Link to={`${eventsBasePath}/${event.id}`} className="inline-flex">
               <Button
                 size="icon"
                 variant="secondary"
                 aria-label="View Event"
-                className="border-white/70 bg-white/90 text-slate-700 shadow-sm backdrop-blur hover:scale-110 hover:bg-white hover:text-brand-600"
+                className="h-11 w-11 rounded-2xl border-white/70 bg-white/95 text-slate-700 shadow-sm backdrop-blur hover:scale-110 hover:bg-white hover:text-brand-600"
                 icon={<Eye className="h-4 w-4" />}
               />
             </Link>
@@ -92,7 +97,7 @@ function EventCard({ event, stats }: { event: EventItem; stats?: TicketEventStat
                   size="icon"
                   variant="secondary"
                   aria-label="Edit Event"
-                  className="border-white/70 bg-white/90 text-slate-700 shadow-sm backdrop-blur hover:scale-110 hover:bg-white hover:text-amber-600"
+                  className="h-11 w-11 rounded-2xl border-white/70 bg-white/95 text-slate-700 shadow-sm backdrop-blur hover:scale-110 hover:bg-white hover:text-amber-600"
                   icon={<Pencil className="h-4 w-4" />}
                 />
               </Link>
@@ -102,17 +107,26 @@ function EventCard({ event, stats }: { event: EventItem; stats?: TicketEventStat
         </div>
       </div>
 
-        <div className="space-y-4 p-4">
+      <div className="space-y-5 p-5">
         <div className="space-y-3">
           <div className="flex items-start justify-between gap-3">
-            <h3 className="text-lg font-semibold text-slate-950 transition-colors duration-200 group-hover:text-brand-700">{event.title}</h3>
-            <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{formatTicketPrice(event.ticketPrice)}</span>
+            <h3 className="text-[1.8rem] font-semibold leading-tight text-slate-950 transition-colors duration-200 group-hover:text-brand-700">{event.title}</h3>
+            <div className="flex shrink-0 items-center gap-2">
+              <span className="rounded-2xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-600">{formatTicketPrice(event.ticketPrice)}</span>
+              <Link to={`${eventsBasePath}/${event.id}/attendees`} className="shrink-0">
+                <Button variant="secondary" size="sm" className="rounded-2xl">
+                  View Attendees
+                </Button>
+              </Link>
+            </div>
           </div>
 
-          <div className="space-y-2 text-sm text-slate-600">
+          <div className="space-y-3 text-sm text-slate-600">
             <div className="flex items-center gap-2">
               <CalendarDays className="h-4 w-4 text-brand-500" />
-              <span>{formatShortDate(event.startDate)}</span>
+              <span>
+                {formatShortDate(event.startDate)} • {eventTime}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-brand-500" />
@@ -121,22 +135,22 @@ function EventCard({ event, stats }: { event: EventItem; stats?: TicketEventStat
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-3 text-xs text-slate-600">
+        <div className="grid grid-cols-2 gap-3 border-t border-slate-200/80 pt-4 text-xs text-slate-600 md:grid-cols-4">
           <div>
             <p className="uppercase tracking-[0.18em] text-slate-400">Sold</p>
-            <p className="mt-1 text-sm font-semibold text-slate-900">{stats?.totalTicketsSold ?? event.soldTickets}</p>
+            <p className="mt-2 text-[1.65rem] font-semibold leading-none text-blue-600">{stats?.totalTicketsSold ?? event.soldTickets}</p>
           </div>
           <div>
             <p className="uppercase tracking-[0.18em] text-slate-400">Seats Left</p>
-            <p className="mt-1 text-sm font-semibold text-slate-900">{stats?.remainingSeats ?? event.remainingSeats}</p>
+            <p className="mt-2 text-[1.65rem] font-semibold leading-none text-amber-500">{stats?.remainingSeats ?? event.remainingSeats}</p>
           </div>
           <div>
             <p className="uppercase tracking-[0.18em] text-slate-400">Revenue</p>
-            <p className="mt-1 text-sm font-semibold text-slate-900">{formatRevenue(stats?.totalRevenue ?? 0)}</p>
+            <p className="mt-2 text-[1.65rem] font-semibold leading-none text-emerald-600">{formatRevenue(stats?.totalRevenue ?? 0)}</p>
           </div>
           <div>
             <p className="uppercase tracking-[0.18em] text-slate-400">Bookings</p>
-            <p className="mt-1 text-sm font-semibold text-slate-900">{stats?.confirmedBookings ?? 0}</p>
+            <p className="mt-2 text-[1.65rem] font-semibold leading-none text-slate-900">{stats?.confirmedBookings ?? 0}</p>
           </div>
         </div>
 
@@ -161,11 +175,6 @@ function EventCard({ event, stats }: { event: EventItem; stats?: TicketEventStat
           ) : null}
         </div>
 
-        <div className="flex justify-end">
-          <Link to={`${eventsBasePath}/${event.id}/attendees`}>
-            <Button variant="secondary" size="sm">View Attendees</Button>
-          </Link>
-        </div>
       </div>
     </Card>
   );

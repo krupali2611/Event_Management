@@ -1,7 +1,8 @@
-import { Menu, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
+import { LogOut, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { ComponentType } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import type { UserRole } from '@/types/api';
 
 export interface SidebarItem {
@@ -14,21 +15,41 @@ interface SidebarProps {
   items: SidebarItem[];
   role: UserRole;
   theme: 'dark' | 'light';
+  isOpen: boolean;
+  isDesktopCollapsed: boolean;
+  onOpenChange: (open: boolean) => void;
+  onDesktopCollapseChange: (collapsed: boolean) => void;
   onCollapseChange?: (collapsed: boolean) => void;
 }
 
-function Sidebar({ items, role, theme, onCollapseChange }: SidebarProps) {
-  const [open, setOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+function Sidebar({
+  items,
+  role,
+  theme,
+  isOpen,
+  isDesktopCollapsed,
+  onOpenChange,
+  onDesktopCollapseChange,
+  onCollapseChange,
+}: SidebarProps) {
+  const [isDesktop, setIsDesktop] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { currentUser, logout } = useAuth();
   const dark = theme === 'dark';
   const dashboardTitle = role === 'ORGANIZER' ? 'Organizer Dashboard' : role === 'SUPER_ADMIN' ? 'Super Admin Dashboard' : 'Admin Dashboard';
+  const initials = currentUser?.name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('');
 
   const shellClass = useMemo(
     () =>
       dark
-        ? 'border-[#1F2937] bg-[#111827] text-[#E5E7EB]'
-        : 'border-slate-200 bg-white/95 text-slate-700',
+        ? 'border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,#071B4D_0%,#0A235F_100%)] text-[#EAF1FF] shadow-[0_34px_68px_-34px_rgba(2,6,23,0.8)]'
+        : 'border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,#071B4D_0%,#0A235F_100%)] text-[#EAF1FF] shadow-[0_34px_68px_-34px_rgba(2,6,23,0.45)]',
     [dark],
   );
 
@@ -38,10 +59,12 @@ function Sidebar({ items, role, theme, onCollapseChange }: SidebarProps) {
       const matches = event.matches;
 
       if (matches) {
-        setCollapsed(true);
-        setOpen(false);
+        onOpenChange(false);
+        onDesktopCollapseChange(false);
+        setIsDesktop(false);
       } else {
-        setOpen(false);
+        onOpenChange(true);
+        setIsDesktop(true);
       }
     };
 
@@ -49,79 +72,109 @@ function Sidebar({ items, role, theme, onCollapseChange }: SidebarProps) {
     mediaQuery.addEventListener('change', handleChange);
 
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
+  }, [onDesktopCollapseChange, onOpenChange]);
 
   useEffect(() => {
-    onCollapseChange?.(collapsed);
-  }, [collapsed, onCollapseChange]);
+    onCollapseChange?.(isDesktop ? isDesktopCollapsed : false);
+  }, [isDesktop, isDesktopCollapsed, onCollapseChange]);
+
+  const activeItemPath = useMemo(() => {
+    let bestMatch: string | null = null;
+
+    for (const item of items) {
+      const matches = location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+
+      if (!matches) {
+        continue;
+      }
+
+      if (!bestMatch || item.to.length > bestMatch.length) {
+        bestMatch = item.to;
+      }
+    }
+
+    return bestMatch;
+  }, [items, location.pathname]);
+
+  const handleLogout = (): void => {
+    logout();
+    navigate('/events', { replace: true });
+  };
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen((current) => !current)}
-        className={`fixed left-4 top-4 z-50 inline-flex h-10 w-10 items-center justify-center rounded-xl border lg:hidden ${shellClass}`}
-        aria-label="Toggle sidebar"
-      >
-        {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-      </button>
-
-      <button
-        type="button"
-        onClick={() => setCollapsed((current) => !current)}
-        className={`fixed left-4 top-16 z-40 hidden h-10 w-10 items-center justify-center rounded-xl border transition lg:inline-flex ${shellClass}`}
-        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-      >
-        {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-      </button>
-
       <aside
-        className={`fixed inset-y-0 left-0 z-40 border-r px-4 py-4 transition-all duration-300 lg:translate-x-0 ${collapsed ? 'w-24' : 'w-72'} ${shellClass} ${
-          open ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r px-4 py-5 transition-all duration-300 ease-out lg:translate-x-0 ${isDesktop && isDesktopCollapsed ? 'w-24' : 'w-72'} ${shellClass} ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className={`${dark ? 'border-[#1F2937] bg-[#0B1220]' : 'border-slate-200 bg-slate-50'} rounded-2xl border p-4`}>
-          <p className={`text-[11px] font-semibold uppercase tracking-[0.32em] ${dark ? 'text-[#9CA3AF]' : 'text-slate-500'} ${collapsed ? 'text-center' : ''}`}>
-            Event Management System
-          </p>
-          {!collapsed ? (
-            <>
-              <h2 className="mt-3 text-lg font-semibold">{dashboardTitle}</h2>
-              
-            </>
-          ) : null}
+        <div className="rounded-none border-b border-white/10 bg-transparent p-1 pb-5">
+          <div className={`flex items-center ${isDesktop && isDesktopCollapsed ? 'justify-center' : 'gap-3'}`}>
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#2d5be3_0%,#2347ba_55%,#1a3180_100%)] text-white shadow-lg shadow-slate-950/30">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            {!(isDesktop && isDesktopCollapsed) ? (
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#D6E4FF]/70">EventHub</p>
+                <h2 className="truncate text-lg font-semibold text-white">{dashboardTitle}</h2>
+              </div>
+            ) : null}
+          </div>
+
+          <div
+            className={`mt-5 rounded-[1.5rem] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.04)] p-3 transition-all duration-300 ease-out ${isDesktop && isDesktopCollapsed ? 'px-2' : ''}`}
+          >
+            <div className={`flex items-center ${isDesktop && isDesktopCollapsed ? 'justify-center' : 'gap-3'}`}>
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#fde68a_0%,#f59e0b_100%)] text-sm font-bold text-slate-900">
+                {initials || 'EM'}
+              </div>
+              {!(isDesktop && isDesktopCollapsed) ? (
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-white">{currentUser?.name ?? 'Workspace User'}</p>
+                  <p className="mt-0.5 truncate text-xs text-[#D6E4FF]/72">{currentUser?.email ?? 'workspace@example.com'}</p>
+                </div>
+              ) : null}
+            </div>
+          </div>
         </div>
 
-        <nav className="mt-5 space-y-1.5">
+        <nav className="mt-6 space-y-2">
           {items.map((item) => {
-            const active = location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+            const active = activeItemPath === item.to;
             const Icon = item.icon;
 
             return (
               <Link
                 key={item.to}
                 to={item.to}
-                onClick={() => setOpen(false)}
-                className={`flex items-center rounded-xl px-3 py-2.5 text-sm font-medium transition ${collapsed ? 'justify-center' : 'gap-3'} ${
-                  dark
-                    ? active
-                      ? 'bg-[#6366F1]/15 text-[#E5E7EB]'
-                      : 'text-[#9CA3AF] hover:bg-[#0B1220] hover:text-[#E5E7EB]'
-                    : active
-                      ? 'bg-indigo-50 text-indigo-700'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                onClick={() => onOpenChange(false)}
+                className={`flex items-center rounded-[14px] px-3.5 py-3 text-sm font-medium transition-all duration-300 ease-out ${isDesktop && isDesktopCollapsed ? 'justify-center' : 'gap-3'} ${
+                  active
+                    ? 'bg-[linear-gradient(90deg,#2563FF_0%,#3B82F6_100%)] text-white shadow-[0_16px_30px_-16px_rgba(37,99,255,0.9),0_0_0_1px_rgba(147,197,253,0.28)]'
+                    : 'bg-transparent text-[#EAF1FF] hover:bg-[rgba(255,255,255,0.08)] hover:text-white'
                 }`}
-                title={collapsed ? item.label : undefined}
+                title={isDesktop && isDesktopCollapsed ? item.label : undefined}
               >
-                <Icon className={`h-4 w-4 ${active && dark ? 'text-[#6366F1]' : ''}`} />
-                {!collapsed ? <span>{item.label}</span> : null}
+                <Icon className={`h-4 w-4 transition-colors duration-300 ${active ? 'text-white' : 'text-[#D6E4FF]'}`} />
+                {!(isDesktop && isDesktopCollapsed) ? <span>{item.label}</span> : null}
               </Link>
             );
           })}
         </nav>
+
+        <div className="mt-auto border-t border-white/10 pt-5">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className={`flex w-full items-center rounded-[14px] px-3.5 py-3 text-sm font-medium text-[#EAF1FF] transition-all duration-300 ease-out hover:bg-[rgba(255,255,255,0.08)] hover:text-white ${isDesktop && isDesktopCollapsed ? 'justify-center' : 'gap-3'}`}
+          >
+            <LogOut className="h-4 w-4 text-[#D6E4FF] transition-colors duration-300 hover:text-white" />
+            {!(isDesktop && isDesktopCollapsed) ? <span>Logout</span> : null}
+          </button>
+        </div>
       </aside>
 
-      {open ? <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={() => setOpen(false)} /> : null}
+      {isOpen ? <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={() => onOpenChange(false)} /> : null}
     </>
   );
 }

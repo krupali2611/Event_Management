@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import { NotificationType } from './constants/notificationTypes';
+import { cleanupNotificationsCron } from './cron/cleanupNotifications.cron';
 import { getReminderCandidates, sendEventReminderNotification } from './notification.service';
 
 async function dispatchReminderBatch(type: typeof NotificationType.EVENT_REMINDER_24H | typeof NotificationType.EVENT_REMINDER_1H): Promise<void> {
@@ -23,6 +24,12 @@ export function startNotificationCronJobs(): void {
 
     void dispatchReminderBatch(NotificationType.EVENT_REMINDER_1H).catch((error: unknown) => {
       console.error('1 hour reminder cron failed', error);
+    });
+  });
+
+  cron.schedule('0 * * * *', () => {
+    void cleanupNotificationsCron().catch((error: unknown) => {
+      console.error('Notification cleanup cron failed', error);
     });
   });
 }

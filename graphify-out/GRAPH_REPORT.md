@@ -1,12 +1,12 @@
-# Graph Report - D:\krupali\Event_Management  (2026-05-08)
+# Graph Report - D:\krupali\Event_Management  (2026-05-13)
 
 ## Corpus Check
-- 147 files · ~70,627 words
+- 216 files · ~119,665 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 486 nodes · 717 edges · 117 communities detected
-- Extraction: 79% EXTRACTED · 21% INFERRED · 0% AMBIGUOUS · INFERRED: 153 edges (avg confidence: 0.8)
+- 739 nodes · 1151 edges · 154 communities detected
+- Extraction: 77% EXTRACTED · 23% INFERRED · 0% AMBIGUOUS · INFERRED: 268 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -127,18 +127,55 @@
 - [[_COMMUNITY_Community 114|Community 114]]
 - [[_COMMUNITY_Community 115|Community 115]]
 - [[_COMMUNITY_Community 116|Community 116]]
+- [[_COMMUNITY_Community 117|Community 117]]
+- [[_COMMUNITY_Community 118|Community 118]]
+- [[_COMMUNITY_Community 119|Community 119]]
+- [[_COMMUNITY_Community 120|Community 120]]
+- [[_COMMUNITY_Community 121|Community 121]]
+- [[_COMMUNITY_Community 122|Community 122]]
+- [[_COMMUNITY_Community 123|Community 123]]
+- [[_COMMUNITY_Community 124|Community 124]]
+- [[_COMMUNITY_Community 125|Community 125]]
+- [[_COMMUNITY_Community 126|Community 126]]
+- [[_COMMUNITY_Community 127|Community 127]]
+- [[_COMMUNITY_Community 128|Community 128]]
+- [[_COMMUNITY_Community 129|Community 129]]
+- [[_COMMUNITY_Community 130|Community 130]]
+- [[_COMMUNITY_Community 131|Community 131]]
+- [[_COMMUNITY_Community 132|Community 132]]
+- [[_COMMUNITY_Community 133|Community 133]]
+- [[_COMMUNITY_Community 134|Community 134]]
+- [[_COMMUNITY_Community 135|Community 135]]
+- [[_COMMUNITY_Community 136|Community 136]]
+- [[_COMMUNITY_Community 137|Community 137]]
+- [[_COMMUNITY_Community 138|Community 138]]
+- [[_COMMUNITY_Community 139|Community 139]]
+- [[_COMMUNITY_Community 140|Community 140]]
+- [[_COMMUNITY_Community 141|Community 141]]
+- [[_COMMUNITY_Community 142|Community 142]]
+- [[_COMMUNITY_Community 143|Community 143]]
+- [[_COMMUNITY_Community 144|Community 144]]
+- [[_COMMUNITY_Community 145|Community 145]]
+- [[_COMMUNITY_Community 146|Community 146]]
+- [[_COMMUNITY_Community 147|Community 147]]
+- [[_COMMUNITY_Community 148|Community 148]]
+- [[_COMMUNITY_Community 149|Community 149]]
+- [[_COMMUNITY_Community 150|Community 150]]
+- [[_COMMUNITY_Community 151|Community 151]]
+- [[_COMMUNITY_Community 152|Community 152]]
+- [[_COMMUNITY_Community 153|Community 153]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `sendSuccess()` - 36 edges
-2. `getApiErrorMessage()` - 24 edges
-3. `updateEvent()` - 16 edges
-4. `updateVenue()` - 11 edges
-5. `createEvent()` - 10 edges
-6. `getTicketBookingDelegate()` - 9 edges
-7. `createBookingInTransaction()` - 9 edges
-8. `getEventDelegate()` - 9 edges
-9. `ensureEventAccess()` - 9 edges
-10. `getEventById()` - 9 edges
+1. `sendSuccess()` - 64 edges
+2. `getApiErrorMessage()` - 31 edges
+3. `updateEvent()` - 20 edges
+4. `createEvent()` - 13 edges
+5. `getEventDelegate()` - 12 edges
+6. `getFeedbackDelegate()` - 11 edges
+7. `updateVenue()` - 11 edges
+8. `getTicketBookingDelegate()` - 10 edges
+9. `getEventDelegate()` - 10 edges
+10. `sendTicketStatusChangedNotification()` - 9 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `handleImageFileChange()` --calls--> `getApiErrorMessage()`  [INFERRED]
@@ -147,112 +184,112 @@
   D:\krupali\Event_Management\server\src\modules\tickets\ticket.utils.ts → D:\krupali\Event_Management\server\src\services\event.service.ts
 - `submitForm()` --calls--> `onSubmit()`  [INFERRED]
   D:\krupali\Event_Management\client\src\components\admin\VenueForm.tsx → D:\krupali\Event_Management\client\src\pages\auth\RegisterPage.tsx
-- `checkAvailability()` --calls--> `getApiErrorMessage()`  [INFERRED]
-  D:\krupali\Event_Management\client\src\components\organizer\EventWizardForm.tsx → D:\krupali\Event_Management\client\src\utils\getApiErrorMessage.ts
-- `submit()` --calls--> `onSubmit()`  [INFERRED]
-  D:\krupali\Event_Management\client\src\components\organizer\EventWizardForm.tsx → D:\krupali\Event_Management\client\src\pages\auth\RegisterPage.tsx
+- `onSubmit()` --calls--> `getApiErrorMessage()`  [INFERRED]
+  D:\krupali\Event_Management\client\src\components\auth\AuthModal.tsx → D:\krupali\Event_Management\client\src\utils\getApiErrorMessage.ts
+- `onSubmit()` --calls--> `registerUser()`  [INFERRED]
+  D:\krupali\Event_Management\client\src\components\auth\AuthModal.tsx → D:\krupali\Event_Management\server\src\services\auth.service.ts
 
 ## Communities
 
 ### Community 0 - "Community 0"
-Cohesion: 0.1
-Nodes (48): assertEventHasNotStarted(), assertEventIsMutable(), attachTicketMetrics(), buildGalleryImageEntries(), canManageAllEvents(), canTransitionToStatus(), createEvent(), createEventRecord() (+40 more)
+Cohesion: 0.03
+Nodes (28): handleFeedbackSubmit(), loadPastEvents(), handleSubmit(), handleSubmit(), handleSubmit(), loadVenue(), loadReviews(), getApiErrorMessage() (+20 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.06
-Nodes (21): handleCancelEvent(), handleSubmit(), handleSubmit(), loadVenue(), updateEventStatusController(), updateEventStatus(), handleStatusAction(), getApiErrorMessage() (+13 more)
+Cohesion: 0.05
+Nodes (44): buildEmailShell(), sendBrevoEmail(), dispatchReminderBatch(), sendEmailNotification(), eventCancelledEmailTemplate(), eventUpdatedEmailTemplate(), getNotificationsController(), getUnreadNotificationCountController() (+36 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.11
-Nodes (33): cancelBooking(), cancelBookingInTransaction(), cancelBookingsForEvent(), cancelBookingsForEventInTransaction(), canManageAllBookings(), checkAvailability(), checkAvailabilityInTransaction(), createBooking() (+25 more)
+Cohesion: 0.09
+Nodes (54): assertEventHasNotStarted(), assertEventIsMutable(), attachTicketMetrics(), buildGalleryImageEntries(), cancelTicketBookingsForEventInTransaction(), canManageAllEvents(), canTransitionToStatus(), createEvent() (+46 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.11
-Nodes (28): cleanupUploadedImages(), createEventController(), getEventController(), getEventsController(), getPublicEventController(), getPublicEventsController(), getUploadedEventImages(), normalizeEventBody() (+20 more)
+Cohesion: 0.08
+Nodes (36): getOrganizerDashboardRecentPurchasesController(), getOrganizerDashboardRevenueController(), getOrganizerDashboardStatsController(), getOrganizerDashboardTicketSalesController(), getSuperAdminDashboardRevenueController(), getSuperAdminDashboardRoleDistributionController(), getSuperAdminDashboardStatsController(), getSuperAdminDashboardTopEventsController() (+28 more)
 
 ### Community 4 - "Community 4"
 Cohesion: 0.14
-Nodes (31): cancelTicketBooking(), createBookingRecord(), createTicketBooking(), ensureAnalyticsAccess(), ensureAttendeeCanBook(), ensureBookingExists(), ensureBookingOwner(), ensureEventAnalyticsAccess() (+23 more)
+Nodes (35): getAdminDashboardEventsAnalyticsController(), getAdminDashboardEventStatusController(), getAdminDashboardRecentEventsController(), getAdminDashboardRecentUsersController(), getAdminDashboardStatsController(), getAdminDashboardUserAnalyticsController(), buildLastTwelveMonths(), ensureAdminAccess() (+27 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.28
-Nodes (18): assertVenueUniqueness(), createVenue(), deactivateVenue(), ensureVenueExists(), getOptionalVenueImageData(), getVenueAvailability(), getVenueById(), getVenueDatabaseFieldNames() (+10 more)
+Cohesion: 0.12
+Nodes (33): cancelBooking(), cancelBookingInTransaction(), cancelBookingsForEvent(), cancelBookingsForEventInTransaction(), canManageAllBookings(), checkAvailability(), checkAvailabilityInTransaction(), createBooking() (+25 more)
 
 ### Community 6 - "Community 6"
+Cohesion: 0.07
+Nodes (17): loginController(), meController(), registerController(), authenticate(), buildAuthResponse(), getCurrentUser(), loginUser(), registerUser() (+9 more)
+
+### Community 7 - "Community 7"
+Cohesion: 0.14
+Nodes (32): cancelTicketBooking(), createBookingRecord(), createTicketBooking(), ensureAnalyticsAccess(), ensureAttendeeCanBook(), ensureBookingExists(), ensureBookingOwner(), ensureEventAnalyticsAccess() (+24 more)
+
+### Community 8 - "Community 8"
+Cohesion: 0.13
+Nodes (26): getAdminFeedbackAnalyticsController(), getAdminFeedbackReviewsController(), getAttendeePastEventsController(), getMyFeedbackController(), getOrganizerFeedbackAnalyticsController(), getOrganizerFeedbackController(), submitFeedbackController(), ensureAdminAccess() (+18 more)
+
+### Community 9 - "Community 9"
+Cohesion: 0.16
+Nodes (26): deleteFromCloudinary(), createVenueController(), deactivateVenueController(), getVenueAvailabilityController(), getVenueController(), getVenuesController(), toggleVenueStatusController(), updateVenueController() (+18 more)
+
+### Community 10 - "Community 10"
+Cohesion: 0.14
+Nodes (14): clearSession(), hydrateAuth(), login(), logout(), persistSession(), readStoredToken(), register(), onSubmit() (+6 more)
+
+### Community 11 - "Community 11"
 Cohesion: 0.19
 Nodes (17): deactivateUserController(), getUserDetailsController(), getUsersController(), updateUserRoleController(), updateUserStatusController(), assertUserVisible(), buildUserVisibilityWhere(), canTransitionRole() (+9 more)
 
-### Community 7 - "Community 7"
-Cohesion: 0.11
-Nodes (6): checkVenueAvailability(), checkAvailability(), submit(), onSubmit(), handleImageFileChange(), submitForm()
-
-### Community 8 - "Community 8"
-Cohesion: 0.17
-Nodes (11): loginController(), meController(), registerController(), authenticate(), buildAuthResponse(), getCurrentUser(), loginUser(), registerUser() (+3 more)
-
-### Community 9 - "Community 9"
-Cohesion: 0.29
-Nodes (9): clearSession(), hydrateAuth(), login(), logout(), persistSession(), readStoredToken(), register(), getDefaultRouteForRole() (+1 more)
-
-### Community 10 - "Community 10"
-Cohesion: 0.18
-Nodes (4): deleteFromCloudinary(), deleteEventController(), deleteEvent(), handleDeleteEvent()
-
-### Community 11 - "Community 11"
-Cohesion: 0.22
-Nodes (4): ProfileDropdown(), ProtectedRoute(), RoleHomeRedirect(), useAuth()
-
 ### Community 12 - "Community 12"
+Cohesion: 0.14
+Nodes (1): handleStatusAction()
+
+### Community 13 - "Community 13"
+Cohesion: 0.25
+Nodes (4): AdminDashboardPage(), ProtectedRoute(), RoleHomeRedirect(), useAuth()
+
+### Community 14 - "Community 14"
 Cohesion: 0.25
 Nodes (0): 
 
-### Community 13 - "Community 13"
+### Community 15 - "Community 15"
+Cohesion: 0.48
+Nodes (5): canEditRole(), canToggleStatus(), getRoleActionTooltip(), getStatusActionTooltip(), UserActions()
+
+### Community 16 - "Community 16"
 Cohesion: 0.73
 Nodes (5): main(), migrateEventImages(), migrateVenueImages(), resolveLegacyUploadPath(), uploadLegacyFile()
 
-### Community 14 - "Community 14"
-Cohesion: 0.6
-Nodes (3): canEditRole(), canToggleStatus(), UserActions()
-
-### Community 15 - "Community 15"
+### Community 17 - "Community 17"
 Cohesion: 0.4
 Nodes (0): 
 
-### Community 16 - "Community 16"
-Cohesion: 0.4
-Nodes (2): TicketBookingModal(), useBookTicket()
-
-### Community 17 - "Community 17"
-Cohesion: 0.67
-Nodes (2): formatStatusLabel(), TicketStatusBadge()
-
 ### Community 18 - "Community 18"
-Cohesion: 0.67
-Nodes (2): Badge(), getRoleColor()
+Cohesion: 0.5
+Nodes (0): 
 
 ### Community 19 - "Community 19"
-Cohesion: 1.0
-Nodes (2): getAvailableRoles(), UserRoleModal()
+Cohesion: 0.83
+Nodes (3): EventStatusBadge(), getEventDisplayStatus(), normalizeLifecycleStatus()
 
 ### Community 20 - "Community 20"
-Cohesion: 1.0
-Nodes (2): EventStatusBadge(), normalizeEventStatus()
+Cohesion: 0.5
+Nodes (2): TicketBookingModal(), useBookTicket()
 
 ### Community 21 - "Community 21"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (2): formatStatusLabel(), TicketStatusBadge()
 
 ### Community 22 - "Community 22"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (2): Badge(), getRoleColor()
 
 ### Community 23 - "Community 23"
-Cohesion: 1.0
-Nodes (2): getToneClasses(), TicketAnalyticsCard()
+Cohesion: 0.5
+Nodes (2): AuthRouteRedirect(), useAuthModal()
 
 ### Community 24 - "Community 24"
-Cohesion: 0.67
-Nodes (0): 
+Cohesion: 1.0
+Nodes (2): getAvailableRoles(), UserRoleModal()
 
 ### Community 25 - "Community 25"
 Cohesion: 0.67
@@ -264,26 +301,26 @@ Nodes (0):
 
 ### Community 27 - "Community 27"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (2): getToneClasses(), TicketAnalyticsCard()
 
 ### Community 28 - "Community 28"
-Cohesion: 1.0
+Cohesion: 0.67
 Nodes (0): 
 
 ### Community 29 - "Community 29"
-Cohesion: 1.0
+Cohesion: 0.67
 Nodes (0): 
 
 ### Community 30 - "Community 30"
-Cohesion: 1.0
+Cohesion: 0.67
 Nodes (0): 
 
 ### Community 31 - "Community 31"
-Cohesion: 1.0
+Cohesion: 0.67
 Nodes (0): 
 
 ### Community 32 - "Community 32"
-Cohesion: 1.0
+Cohesion: 0.67
 Nodes (0): 
 
 ### Community 33 - "Community 33"
@@ -622,202 +659,412 @@ Nodes (0):
 Cohesion: 1.0
 Nodes (0): 
 
+### Community 117 - "Community 117"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 118 - "Community 118"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 119 - "Community 119"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 120 - "Community 120"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 121 - "Community 121"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 122 - "Community 122"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 123 - "Community 123"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 124 - "Community 124"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 125 - "Community 125"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 126 - "Community 126"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 127 - "Community 127"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 128 - "Community 128"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 129 - "Community 129"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 130 - "Community 130"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 131 - "Community 131"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 132 - "Community 132"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 133 - "Community 133"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 134 - "Community 134"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 135 - "Community 135"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 136 - "Community 136"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 137 - "Community 137"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 138 - "Community 138"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 139 - "Community 139"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 140 - "Community 140"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 141 - "Community 141"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 142 - "Community 142"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 143 - "Community 143"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 144 - "Community 144"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 145 - "Community 145"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 146 - "Community 146"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 147 - "Community 147"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 148 - "Community 148"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 149 - "Community 149"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 150 - "Community 150"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 151 - "Community 151"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 152 - "Community 152"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 153 - "Community 153"
+Cohesion: 1.0
+Nodes (0): 
+
 ## Knowledge Gaps
-- **Thin community `Community 27`** (2 nodes): `App()`, `App.tsx`
+- **Thin community `Community 33`** (2 nodes): `UserFilters.tsx`, `UserFilters()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 28`** (2 nodes): `UserFilters.tsx`, `UserFilters()`
+- **Thin community `Community 34`** (2 nodes): `VenueCard.tsx`, `IconAction()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 29`** (2 nodes): `UserTable.tsx`, `getVisiblePages()`
+- **Thin community `Community 35`** (2 nodes): `VenueFilters.tsx`, `VenueFilters()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 30`** (2 nodes): `VenueCard.tsx`, `IconAction()`
+- **Thin community `Community 36`** (2 nodes): `formatDate()`, `AdminAnalyticsView.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 31`** (2 nodes): `VenueFilters.tsx`, `VenueFilters()`
+- **Thin community `Community 37`** (2 nodes): `AuthShell()`, `AuthShell.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 32`** (2 nodes): `AuthShell()`, `AuthShell.tsx`
+- **Thin community `Community 38`** (2 nodes): `FeedbackCard.tsx`, `FeedbackCard()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 33`** (2 nodes): `Sidebar.tsx`, `handleChange()`
+- **Thin community `Community 39`** (2 nodes): `FeedbackModal.tsx`, `FeedbackModal()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 34`** (2 nodes): `BookingAvailabilityPanel()`, `BookingAvailabilityPanel.tsx`
+- **Thin community `Community 40`** (2 nodes): `RatingStars.tsx`, `RatingStars()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 35`** (2 nodes): `formatCurrency()`, `AttendeeTable.tsx`
+- **Thin community `Community 41`** (2 nodes): `BookingAvailabilityPanel()`, `BookingAvailabilityPanel.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 36`** (2 nodes): `PaymentStatusBadge.tsx`, `PaymentStatusBadge()`
+- **Thin community `Community 42`** (2 nodes): `StatCard.tsx`, `StatCard()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 37`** (2 nodes): `RemainingSeatsIndicator.tsx`, `RemainingSeatsIndicator()`
+- **Thin community `Community 43`** (2 nodes): `formatCurrency()`, `AttendeeTable.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 38`** (2 nodes): `Button()`, `Button.tsx`
+- **Thin community `Community 44`** (2 nodes): `PaymentStatusBadge.tsx`, `PaymentStatusBadge()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 39`** (2 nodes): `Card()`, `Card.tsx`
+- **Thin community `Community 45`** (2 nodes): `QuantitySelector.tsx`, `QuantitySelector()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 40`** (2 nodes): `Input.tsx`, `Input()`
+- **Thin community `Community 46`** (2 nodes): `RemainingSeatsIndicator.tsx`, `RemainingSeatsIndicator()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 41`** (2 nodes): `Modal.tsx`, `Modal()`
+- **Thin community `Community 47`** (2 nodes): `Button()`, `Button.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 42`** (2 nodes): `Table.tsx`, `Table()`
+- **Thin community `Community 48`** (2 nodes): `Card()`, `Card.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 43`** (2 nodes): `useCancelTicket.ts`, `useCancelTicket()`
+- **Thin community `Community 49`** (2 nodes): `Input.tsx`, `Input()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 44`** (2 nodes): `useEventTicketAnalytics.ts`, `useEventTicketAnalytics()`
+- **Thin community `Community 50`** (2 nodes): `Modal.tsx`, `Modal()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 45`** (2 nodes): `useMyTickets.ts`, `useMyTickets()`
+- **Thin community `Community 51`** (2 nodes): `Table.tsx`, `Table()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 46`** (2 nodes): `MainLayout.tsx`, `MainLayout()`
+- **Thin community `Community 52`** (2 nodes): `AuthModalProvider()`, `AuthModalContext.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 47`** (2 nodes): `formatTicketPrice()`, `AttendeePage.tsx`
+- **Thin community `Community 53`** (2 nodes): `useAdminDashboardAnalytics.ts`, `useAdminDashboardAnalytics()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 48`** (2 nodes): `NotFoundPage.tsx`, `NotFoundPage()`
+- **Thin community `Community 54`** (2 nodes): `useCancelTicket.ts`, `useCancelTicket()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 49`** (2 nodes): `AddVenuePage()`, `AddVenuePage.tsx`
+- **Thin community `Community 55`** (2 nodes): `useEventTicketAnalytics.ts`, `useEventTicketAnalytics()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 50`** (2 nodes): `UserDetailsPage.tsx`, `UserDetailsPage()`
+- **Thin community `Community 56`** (2 nodes): `useNotifications.ts`, `useNotifications()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 51`** (2 nodes): `CreateEventPage()`, `CreateEventPage.tsx`
+- **Thin community `Community 57`** (2 nodes): `usePlatformDashboardAnalytics.ts`, `usePlatformDashboardAnalytics()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 52`** (2 nodes): `AppRoutes()`, `AppRoutes.tsx`
+- **Thin community `Community 58`** (2 nodes): `useSuperAdminDashboardAnalytics.ts`, `useSuperAdminDashboardAnalytics()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 53`** (2 nodes): `event.service.ts`, `toEventFormData()`
+- **Thin community `Community 59`** (2 nodes): `MainLayout.tsx`, `MainLayout()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 54`** (2 nodes): `seed.ts`, `seedSuperAdmin()`
+- **Thin community `Community 60`** (2 nodes): `UserLayout.tsx`, `UserLayout()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 55`** (2 nodes): `server.ts`, `ensureSuperAdmin()`
+- **Thin community `Community 61`** (2 nodes): `NotFoundPage.tsx`, `NotFoundPage()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 56`** (2 nodes): `env.ts`, `getRequiredEnv()`
+- **Thin community `Community 62`** (2 nodes): `OrganizerPage.tsx`, `formatDate()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 57`** (2 nodes): `healthController.ts`, `getHealthStatus()`
+- **Thin community `Community 63`** (2 nodes): `AddVenuePage()`, `AddVenuePage.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 58`** (2 nodes): `role.middleware.ts`, `requireRole()`
+- **Thin community `Community 64`** (2 nodes): `UserDetailsPage.tsx`, `UserDetailsPage()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 59`** (2 nodes): `asyncHandler()`, `asyncHandler.ts`
+- **Thin community `Community 65`** (2 nodes): `VenueBookingsAdminPage.tsx`, `VenueBookingsAdminPage()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 60`** (1 nodes): `postcss.config.js`
+- **Thin community `Community 66`** (2 nodes): `event.service.ts`, `toEventFormData()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 61`** (1 nodes): `tailwind.config.ts`
+- **Thin community `Community 67`** (2 nodes): `seed.ts`, `seedSuperAdmin()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 62`** (1 nodes): `vite.config.ts`
+- **Thin community `Community 68`** (2 nodes): `server.ts`, `ensureSuperAdmin()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 63`** (1 nodes): `main.tsx`
+- **Thin community `Community 69`** (2 nodes): `env.ts`, `getRequiredEnv()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 64`** (1 nodes): `httpClient.ts`
+- **Thin community `Community 70`** (2 nodes): `healthController.ts`, `getHealthStatus()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 65`** (1 nodes): `Navbar.tsx`
+- **Thin community `Community 71`** (2 nodes): `role.middleware.ts`, `requireRole()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 66`** (1 nodes): `VenueTable.tsx`
+- **Thin community `Community 72`** (2 nodes): `cleanupNotificationsCron()`, `cleanupNotifications.cron.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 67`** (1 nodes): `Navbar.tsx`
+- **Thin community `Community 73`** (2 nodes): `asyncHandler()`, `asyncHandler.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 68`** (1 nodes): `VenueBookingForm.tsx`
+- **Thin community `Community 74`** (1 nodes): `postcss.config.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 69`** (1 nodes): `VenueBookingTable.tsx`
+- **Thin community `Community 75`** (1 nodes): `tailwind.config.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 70`** (1 nodes): `BookingStatusFilter.tsx`
+- **Thin community `Community 76`** (1 nodes): `vite.config.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 71`** (1 nodes): `QuantitySelector.tsx`
+- **Thin community `Community 77`** (1 nodes): `App.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 72`** (1 nodes): `AdminLayout.tsx`
+- **Thin community `Community 78`** (1 nodes): `main.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 73`** (1 nodes): `OrganizerLayout.tsx`
+- **Thin community `Community 79`** (1 nodes): `httpClient.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 74`** (1 nodes): `UserLayout.tsx`
+- **Thin community `Community 80`** (1 nodes): `Navbar.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 75`** (1 nodes): `OrganizerPage.tsx`
+- **Thin community `Community 81`** (1 nodes): `VenueTable.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 76`** (1 nodes): `AdminDashboardPage.tsx`
+- **Thin community `Community 82`** (1 nodes): `SuperAdminAnalyticsView.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 77`** (1 nodes): `EventAttendeesPage.tsx`
+- **Thin community `Community 83`** (1 nodes): `ReviewList.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 78`** (1 nodes): `auth.service.ts`
+- **Thin community `Community 84`** (1 nodes): `ProfileDropdown.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 79`** (1 nodes): `healthService.ts`
+- **Thin community `Community 85`** (1 nodes): `VenueBookingForm.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 80`** (1 nodes): `ticketService.ts`
+- **Thin community `Community 86`** (1 nodes): `VenueBookingTable.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 81`** (1 nodes): `user.service.ts`
+- **Thin community `Community 87`** (1 nodes): `ChartContainer.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 82`** (1 nodes): `venue.service.ts`
+- **Thin community `Community 88`** (1 nodes): `DashboardTable.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 83`** (1 nodes): `venueBooking.service.ts`
+- **Thin community `Community 89`** (1 nodes): `BookingStatusFilter.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 84`** (1 nodes): `api.ts`
+- **Thin community `Community 90`** (1 nodes): `AdminLayout.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 85`** (1 nodes): `event.types.ts`
+- **Thin community `Community 91`** (1 nodes): `OrganizerLayout.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 86`** (1 nodes): `ticket.types.ts`
+- **Thin community `Community 92`** (1 nodes): `EventAttendeesPage.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 87`** (1 nodes): `user.types.ts`
+- **Thin community `Community 93`** (1 nodes): `AppRoutes.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 88`** (1 nodes): `venue-booking.types.ts`
+- **Thin community `Community 94`** (1 nodes): `adminDashboard.service.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 89`** (1 nodes): `venue.types.ts`
+- **Thin community `Community 95`** (1 nodes): `adminFeedback.service.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 90`** (1 nodes): `authStorage.ts`
+- **Thin community `Community 96`** (1 nodes): `auth.service.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 91`** (1 nodes): `app.ts`
+- **Thin community `Community 97`** (1 nodes): `feedback.service.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 92`** (1 nodes): `cloudinary.ts`
+- **Thin community `Community 98`** (1 nodes): `healthService.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 93`** (1 nodes): `prisma.ts`
+- **Thin community `Community 99`** (1 nodes): `notification.service.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 94`** (1 nodes): `ticket.constants.ts`
+- **Thin community `Community 100`** (1 nodes): `organizerDashboard.service.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 95`** (1 nodes): `ticket.routes.ts`
+- **Thin community `Community 101`** (1 nodes): `superAdminDashboard.service.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 96`** (1 nodes): `ticket.validation.ts`
+- **Thin community `Community 102`** (1 nodes): `ticketService.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 97`** (1 nodes): `auth.routes.ts`
+- **Thin community `Community 103`** (1 nodes): `user.service.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 98`** (1 nodes): `event.routes.ts`
+- **Thin community `Community 104`** (1 nodes): `venue.service.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 99`** (1 nodes): `healthRoutes.ts`
+- **Thin community `Community 105`** (1 nodes): `venueBooking.service.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 100`** (1 nodes): `index.ts`
+- **Thin community `Community 106`** (1 nodes): `admin-dashboard.types.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 101`** (1 nodes): `user.routes.ts`
+- **Thin community `Community 107`** (1 nodes): `admin-feedback.types.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 102`** (1 nodes): `venue-booking.routes.ts`
+- **Thin community `Community 108`** (1 nodes): `api.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 103`** (1 nodes): `venue.routes.ts`
+- **Thin community `Community 109`** (1 nodes): `event.types.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 104`** (1 nodes): `api.ts`
+- **Thin community `Community 110`** (1 nodes): `feedback.types.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 105`** (1 nodes): `auth.types.ts`
+- **Thin community `Community 111`** (1 nodes): `notification.types.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 106`** (1 nodes): `env.ts`
+- **Thin community `Community 112`** (1 nodes): `organizer-dashboard.types.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 107`** (1 nodes): `event.types.ts`
+- **Thin community `Community 113`** (1 nodes): `super-admin-dashboard.types.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 108`** (1 nodes): `user.types.ts`
+- **Thin community `Community 114`** (1 nodes): `ticket.types.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 109`** (1 nodes): `venue-booking.types.ts`
+- **Thin community `Community 115`** (1 nodes): `user.types.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 110`** (1 nodes): `venue.types.ts`
+- **Thin community `Community 116`** (1 nodes): `venue-booking.types.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 111`** (1 nodes): `apiClient.ts`
+- **Thin community `Community 117`** (1 nodes): `venue.types.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 112`** (1 nodes): `auth.validation.ts`
+- **Thin community `Community 118`** (1 nodes): `authStorage.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 113`** (1 nodes): `event.validation.ts`
+- **Thin community `Community 119`** (1 nodes): `app.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 114`** (1 nodes): `user.validation.ts`
+- **Thin community `Community 120`** (1 nodes): `cloudinary.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 115`** (1 nodes): `venue-booking.validation.ts`
+- **Thin community `Community 121`** (1 nodes): `prisma.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 116`** (1 nodes): `venue.validation.ts`
+- **Thin community `Community 122`** (1 nodes): `dashboard.routes.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 123`** (1 nodes): `feedback.routes.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 124`** (1 nodes): `feedback.routes.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 125`** (1 nodes): `feedback.validation.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 126`** (1 nodes): `notification.routes.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 127`** (1 nodes): `notification.validation.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 128`** (1 nodes): `notificationTypes.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 129`** (1 nodes): `dashboard.routes.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 130`** (1 nodes): `dashboard.routes.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 131`** (1 nodes): `ticket.constants.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 132`** (1 nodes): `ticket.routes.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 133`** (1 nodes): `ticket.validation.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 134`** (1 nodes): `auth.routes.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 135`** (1 nodes): `event.routes.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 136`** (1 nodes): `healthRoutes.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 137`** (1 nodes): `index.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 138`** (1 nodes): `user.routes.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 139`** (1 nodes): `venue-booking.routes.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 140`** (1 nodes): `venue.routes.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 141`** (1 nodes): `api.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 142`** (1 nodes): `auth.types.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 143`** (1 nodes): `env.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 144`** (1 nodes): `event.types.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 145`** (1 nodes): `user.types.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 146`** (1 nodes): `venue-booking.types.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 147`** (1 nodes): `venue.types.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 148`** (1 nodes): `apiClient.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 149`** (1 nodes): `auth.validation.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 150`** (1 nodes): `event.validation.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 151`** (1 nodes): `user.validation.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 152`** (1 nodes): `venue-booking.validation.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 153`** (1 nodes): `venue.validation.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `sendSuccess()` connect `Community 3` to `Community 1`, `Community 2`, `Community 6`, `Community 8`, `Community 10`?**
-  _High betweenness centrality (0.155) - this node is a cross-community bridge._
-- **Why does `getApiErrorMessage()` connect `Community 1` to `Community 9`, `Community 10`, `Community 7`?**
-  _High betweenness centrality (0.111) - this node is a cross-community bridge._
-- **Why does `updateEvent()` connect `Community 0` to `Community 1`, `Community 10`, `Community 3`?**
-  _High betweenness centrality (0.034) - this node is a cross-community bridge._
-- **Are the 35 inferred relationships involving `sendSuccess()` (e.g. with `registerController()` and `loginController()`) actually correct?**
-  _`sendSuccess()` has 35 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 23 inferred relationships involving `getApiErrorMessage()` (e.g. with `handleImageFileChange()` and `checkAvailability()`) actually correct?**
-  _`getApiErrorMessage()` has 23 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 3 inferred relationships involving `updateEvent()` (e.g. with `handleSubmit()` and `updateEventController()`) actually correct?**
-  _`updateEvent()` has 3 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 3 inferred relationships involving `updateVenue()` (e.g. with `handleSubmit()` and `updateVenueController()`) actually correct?**
-  _`updateVenue()` has 3 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `sendSuccess()` connect `Community 3` to `Community 1`, `Community 4`, `Community 5`, `Community 6`, `Community 8`, `Community 9`, `Community 11`?**
+  _High betweenness centrality (0.212) - this node is a cross-community bridge._
+- **Why does `getApiErrorMessage()` connect `Community 0` to `Community 10`, `Community 3`, `Community 12`, `Community 6`?**
+  _High betweenness centrality (0.128) - this node is a cross-community bridge._
+- **Why does `registerUser()` connect `Community 6` to `Community 1`, `Community 10`?**
+  _High betweenness centrality (0.049) - this node is a cross-community bridge._
+- **Are the 63 inferred relationships involving `sendSuccess()` (e.g. with `registerController()` and `loginController()`) actually correct?**
+  _`sendSuccess()` has 63 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 30 inferred relationships involving `getApiErrorMessage()` (e.g. with `handleImageFileChange()` and `onSubmit()`) actually correct?**
+  _`getApiErrorMessage()` has 30 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 6 inferred relationships involving `updateEvent()` (e.g. with `handleSubmit()` and `updateEventController()`) actually correct?**
+  _`updateEvent()` has 6 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 3 inferred relationships involving `createEvent()` (e.g. with `handleSubmit()` and `createEventController()`) actually correct?**
+  _`createEvent()` has 3 INFERRED edges - model-reasoned connections that need verification._

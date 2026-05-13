@@ -1,9 +1,6 @@
-import { Plus } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import VenueFilters from '@/components/admin/VenueFilters';
 import VenueTable from '@/components/admin/VenueTable';
-import Button from '@/components/ui/Button';
 import { venueService } from '@/services/venue.service';
 import type { Venue, VenueListData, VenueListFilters } from '@/types/venue.types';
 import { getApiErrorMessage } from '@/utils/getApiErrorMessage';
@@ -166,23 +163,10 @@ function VenueManagementPage() {
 
   return (
     <section className="space-y-5">
-      <div className="rounded-[1.85rem] border border-slate-200 bg-white/95 px-5 py-5 shadow-panel">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-              {data.pagination.total} venues
-            </div>
-            <Link to="/admin/venues/new">
-              <Button icon={<Plus className="h-4 w-4" />}>
-                Add Venue
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-
       <VenueFilters
         filters={filters}
+        totalVenues={data.pagination.total}
+        actionHref="/admin/venues/new"
         onSearchChange={(value) => setFilters((current) => ({ ...current, page: 1, offset: 0, search: value }))}
         onLocationChange={(value) => setFilters((current) => ({ ...current, page: 1, offset: 0, location: value }))}
         onCapacityChange={(value) => setFilters((current) => ({ ...current, page: 1, offset: 0, minCapacity: value }))}

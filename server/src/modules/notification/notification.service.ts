@@ -111,6 +111,8 @@ async function createInAppNotification(input: {
       title: input.title,
       message: input.message,
       type: input.type,
+      isRead: false,
+      readAt: null,
       link: input.link ?? null,
       metadata: input.metadata,
     },
@@ -254,7 +256,10 @@ export async function markNotificationAsRead(notificationId: string, userId: str
 
   await getNotificationDelegate().update({
     where: { id: notificationId },
-    data: { isRead: true },
+    data: {
+      isRead: true,
+      readAt: new Date(),
+    },
   });
 }
 
@@ -266,6 +271,7 @@ export async function markAllNotificationsAsRead(userId: string): Promise<{ upda
     },
     data: {
       isRead: true,
+      readAt: new Date(),
     },
   });
 

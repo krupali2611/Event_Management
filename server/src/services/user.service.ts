@@ -39,7 +39,9 @@ function toUserListItemDto(user: Pick<ManagedUserRecord, 'id' | 'name' | 'email'
 }
 
 function getVisibleRoles(actorRole: USER_ROLE): USER_ROLE[] {
-  return actorRole === 'SUPER_ADMIN' ? ['SUPER_ADMIN', 'ADMIN', 'ORGANIZER', 'ATTENDEE'] : ['ORGANIZER', 'ATTENDEE'];
+  return actorRole === 'SUPER_ADMIN' || actorRole === 'ADMIN'
+    ? ['SUPER_ADMIN', 'ADMIN', 'ORGANIZER', 'ATTENDEE']
+    : ['ORGANIZER', 'ATTENDEE'];
 }
 
 function ensureRoleFilterAllowed(actorRole: USER_ROLE, role?: USER_ROLE): void {
@@ -49,7 +51,7 @@ function ensureRoleFilterAllowed(actorRole: USER_ROLE, role?: USER_ROLE): void {
 }
 
 function buildUserVisibilityWhere(actorRole: USER_ROLE): Prisma.UserWhereInput {
-  if (actorRole === 'SUPER_ADMIN') {
+  if (actorRole === 'SUPER_ADMIN' || actorRole === 'ADMIN') {
     return {};
   }
 

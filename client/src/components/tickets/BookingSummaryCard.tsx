@@ -20,9 +20,9 @@ function formatCurrency(amount: number): string {
 
 function BookingSummaryCard({ ticketPrice, quantity, totalAmount }: BookingSummaryCardProps) {
   return (
-    <Card className="rounded-3xl border-slate-200 bg-slate-50/90 p-4 shadow-none">
+    <Card className="h-full rounded-3xl border-orange-100 bg-gradient-to-br from-white via-orange-50/80 to-amber-50 p-4 shadow-none">
       <p className="text-sm font-semibold text-slate-950">Booking Summary</p>
-      <div className="mt-4 space-y-3 text-sm text-slate-600">
+      <div className="mt-3 space-y-3 text-sm text-slate-600">
         <div className="flex items-center justify-between">
           <span>Ticket price</span>
           <span className="font-semibold text-slate-900">{formatCurrency(ticketPrice)}</span>
@@ -31,9 +31,9 @@ function BookingSummaryCard({ ticketPrice, quantity, totalAmount }: BookingSumma
           <span>Quantity</span>
           <span className="font-semibold text-slate-900">{quantity}</span>
         </div>
-        <div className="flex items-center justify-between border-t border-slate-200 pt-3 text-base">
+        <div className="flex items-center justify-between border-t border-orange-100 pt-2.5 text-base">
           <span className="font-semibold text-slate-950">Total</span>
-          <span className="font-bold text-slate-950">{formatCurrency(totalAmount)}</span>
+          <span className="font-bold text-orange-700">{formatCurrency(totalAmount)}</span>
         </div>
       </div>
     </Card>

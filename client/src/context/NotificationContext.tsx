@@ -17,6 +17,18 @@ export const NotificationContext = createContext<NotificationContextValue | unde
 
 const POLLING_INTERVAL_MS = 30_000;
 
+function markNotificationRead(notification: NotificationItem): NotificationItem {
+  if (notification.isRead) {
+    return notification;
+  }
+
+  return {
+    ...notification,
+    isRead: true,
+    readAt: new Date().toISOString(),
+  };
+}
+
 export function NotificationProvider({ children }: PropsWithChildren) {
   const { isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -69,14 +81,14 @@ export function NotificationProvider({ children }: PropsWithChildren) {
   const markAsRead = async (id: string): Promise<void> => {
     await notificationService.markAsRead(id);
     setNotifications((current) =>
-      current.map((notification) => (notification.id === id ? { ...notification, isRead: true } : notification)),
+      current.map((notification) => (notification.id === id ? markNotificationRead(notification) : notification)),
     );
     setUnreadCount((current) => Math.max(current - 1, 0));
   };
 
   const markAllAsRead = async (): Promise<void> => {
     await notificationService.markAllAsRead();
-    setNotifications((current) => current.map((notification) => ({ ...notification, isRead: true })));
+    setNotifications((current) => current.map(markNotificationRead));
     setUnreadCount(0);
   };
 
