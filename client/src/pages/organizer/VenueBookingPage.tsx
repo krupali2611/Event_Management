@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { ArrowUpDown, Building2, CalendarDays, CalendarRange, ChevronDown } from 'lucide-react';
+import BookingAvailabilityPanel from '@/components/organizer/BookingAvailabilityPanel';
+import VenueBookingForm, { type VenueBookingFormValues } from '@/components/organizer/VenueBookingForm';
 import VenueBookingTable from '@/components/organizer/VenueBookingTable';
 import Card from '@/components/ui/Card';
 import { venueBookingService } from '@/services/venueBooking.service';
 import { venueService } from '@/services/venue.service';
-import type { VenueBookingListData, VenueBookingListFilters } from '@/types/venue-booking.types';
+import type { BookingAvailability, VenueBookingListData, VenueBookingListFilters } from '@/types/venue-booking.types';
 import type { Venue } from '@/types/venue.types';
 import { getApiErrorMessage } from '@/utils/getApiErrorMessage';
 
@@ -18,9 +20,21 @@ const initialBookingListData: VenueBookingListData = {
   },
 };
 
+const initialFormValues: VenueBookingFormValues = {
+  venueId: '',
+  startDate: '',
+  endDate: '',
+  startTime: '',
+  endTime: '',
+};
+
 function VenueBookingPage() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [bookingsData, setBookingsData] = useState<VenueBookingListData>(initialBookingListData);
+  const [formValues, setFormValues] = useState<VenueBookingFormValues>(initialFormValues);
+  const [availability, setAvailability] = useState<BookingAvailability | null>(null);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [submittingBooking, setSubmittingBooking] = useState(false);
   const [listFilters, setListFilters] = useState<VenueBookingListFilters>({
     venueId: '',
     startDate: '',
@@ -33,6 +47,7 @@ function VenueBookingPage() {
   const [loadingVenues, setLoadingVenues] = useState(true);
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     void loadInitialData();
@@ -41,6 +56,15 @@ function VenueBookingPage() {
   useEffect(() => {
     void loadBookings(listFilters);
   }, [listFilters]);
+
+  useEffect(() => {
+    if (!toast) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => setToast(null), 2600);
+    return () => window.clearTimeout(timeoutId);
+  }, [toast]);
 
   const loadInitialData = async (): Promise<void> => {
     try {
@@ -74,6 +98,75 @@ function VenueBookingPage() {
     }
   };
 
+  const handleFormChange = (field: keyof VenueBookingFormValues, value: string): void => {
+    setFormValues((current) => ({
+      ...current,
+      [field]: value,
+    }));
+    setAvailability(null);
+    setError(null);
+  };
+
+  const canCheckAvailability =
+    formValues.venueId.trim().length > 0 && formValues.startDate.trim().length > 0 && formValues.endDate.trim().length > 0;
+  const canSubmit =
+    canCheckAvailability &&
+    availability?.available === true &&
+    !checkingAvailability &&
+    !submittingBooking;
+
+  const handleCheckAvailability = async (): Promise<void> => {
+    if (!canCheckAvailability) {
+      setError('Venue, start date, and end date are required before checking availability.');
+      return;
+    }
+
+    try {
+      setCheckingAvailability(true);
+      setError(null);
+      const response = await venueBookingService.checkAvailability({
+        venueId: formValues.venueId,
+        startDate: formValues.startDate,
+        endDate: formValues.endDate,
+        ...(formValues.startTime ? { startTime: formValues.startTime } : {}),
+        ...(formValues.endTime ? { endTime: formValues.endTime } : {}),
+      });
+      setAvailability(response.data ?? null);
+    } catch (requestError) {
+      setAvailability(null);
+      setError(getApiErrorMessage(requestError));
+    } finally {
+      setCheckingAvailability(false);
+    }
+  };
+
+  const handleCreateBooking = async (): Promise<void> => {
+    if (!canSubmit) {
+      setError('Please confirm venue availability before creating the booking.');
+      return;
+    }
+
+    try {
+      setSubmittingBooking(true);
+      setError(null);
+      await venueBookingService.createBooking({
+        venueId: formValues.venueId,
+        startDate: formValues.startDate,
+        endDate: formValues.endDate,
+        ...(formValues.startTime ? { startTime: formValues.startTime } : {}),
+        ...(formValues.endTime ? { endTime: formValues.endTime } : {}),
+      });
+      setToast('Venue booking created successfully.');
+      setFormValues(initialFormValues);
+      setAvailability(null);
+      await loadBookings(listFilters);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError));
+    } finally {
+      setSubmittingBooking(false);
+    }
+  };
+
   return (
     <section className="relative space-y-6 overflow-hidden rounded-[2rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.58),rgba(244,247,252,0.92)_30%,rgba(244,247,252,0.98))] px-1 pb-3 pt-2">
       <div
@@ -82,6 +175,20 @@ function VenueBookingPage() {
       />
 
       {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
+        <VenueBookingForm
+          values={formValues}
+          venues={venues}
+          checkingAvailability={checkingAvailability}
+          submitting={submittingBooking}
+          canSubmit={canSubmit}
+          onChange={handleFormChange}
+          onCheckAvailability={() => void handleCheckAvailability()}
+          onSubmit={() => void handleCreateBooking()}
+        />
+        <BookingAvailabilityPanel availability={availability} loading={checkingAvailability} />
+      </div>
 
       <Card className="overflow-hidden border border-white/70 bg-white/80 p-0 shadow-[0_10px_35px_rgba(37,99,255,0.08)] backdrop-blur-xl">
         <div className="relative overflow-hidden px-6 py-6 sm:px-8 sm:py-8">
@@ -180,6 +287,12 @@ function VenueBookingPage() {
         pagination={bookingsData.pagination}
         onPageChange={(page) => setListFilters((current) => ({ ...current, page }))}
       />
+
+      {toast ? (
+        <div className="pointer-events-none fixed bottom-6 right-6 z-50 rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm font-medium text-emerald-700 shadow-[0_18px_40px_rgba(16,185,129,0.18)]">
+          {toast}
+        </div>
+      ) : null}
     </section>
   );
 }

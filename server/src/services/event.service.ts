@@ -533,6 +533,33 @@ function canManageAllEvents(user: AuthenticatedUser): boolean {
   return user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
 }
 
+async function ensureExactEventScheduleIsUnique(input: {
+  executor?: PrismaExecutor;
+  eventId?: string;
+  startDate: Date;
+  endDate: Date;
+  startTime?: string | null;
+  endTime?: string | null;
+}): Promise<void> {
+  const conflictingEvent = await getEventDelegate(input.executor).findFirst({
+    where: {
+      status: { not: 'CANCELLED' },
+      ...(input.eventId ? { NOT: { id: input.eventId } } : {}),
+      startDate: input.startDate,
+      endDate: input.endDate,
+      startTime: input.startTime ?? null,
+      endTime: input.endTime ?? null,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (conflictingEvent) {
+    throw new AppError('An event already exists for the selected date and time slot', 409);
+  }
+}
+
 async function ensureVenueScheduleConflictFree(input: {
   executor?: PrismaExecutor;
   eventId?: string;
@@ -692,7 +719,7 @@ function toEventDto(
     status: event.status as EventDto['status'],
     lifecycleStatus: getEventStatus(event),
     isEditable: event.status !== 'CANCELLED' && new Date() < getEventStartAt(event),
-    isDeletable: event.status === 'CANCELLED',
+    isDeletable: event.status === 'CANCELLED' || getEventStatus(event) === 'COMPLETED',
     createdAt: event.createdAt,
     updatedAt: event.updatedAt,
     ...(event.venue ? { venue: event.venue } : {}),
@@ -850,6 +877,14 @@ export async function createEvent(payload: CreateEventInput, actor: Authenticate
   const createdEvent = await withEventSchemaRetry(() =>
     prisma.$transaction(async (transaction) => {
       await validateVenueCapacity(normalizedPayload.venueId, normalizedPayload.attendeeLimit, transaction);
+      await ensureExactEventScheduleIsUnique({
+        executor: transaction,
+        startDate,
+        endDate,
+        startTime: normalizedPayload.startTime ?? null,
+        endTime: normalizedPayload.endTime ?? null,
+      });
+
       if (normalizedPayload.venueId) {
         await ensureVenueScheduleConflictFree({
           executor: transaction,
@@ -1174,6 +1209,14 @@ export async function updateEvent(id: string, payload: UpdateEventInput, user: A
   await withEventSchemaRetry(() =>
     prisma.$transaction(async (transaction) => {
       await validateVenueCapacity(nextVenueId, nextAttendeeLimit, transaction);
+      await ensureExactEventScheduleIsUnique({
+        executor: transaction,
+        eventId: id,
+        startDate: nextStartDate,
+        endDate: nextEndDate,
+        startTime: nextStartTime,
+        endTime: nextEndTime,
+      });
 
       if (nextVenueId && (scheduleChanged || venueChanged)) {
         await ensureVenueScheduleConflictFree({
@@ -1316,8 +1359,8 @@ async function updateEventStatusInTransaction(
 export async function deleteEvent(id: string, user: AuthenticatedUser): Promise<void> {
   const event = await ensureEventAccess(id, user);
 
-  if (event.status !== 'CANCELLED') {
-    throw new AppError('Only cancelled events can be deleted', 400);
+  if (event.status !== 'CANCELLED' && getEventStatus(event) !== 'COMPLETED') {
+    throw new AppError('Only cancelled or completed events can be deleted', 400);
   }
 
   await prisma.$transaction(async (transaction) => {

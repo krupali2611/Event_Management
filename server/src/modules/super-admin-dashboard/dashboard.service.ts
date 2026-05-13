@@ -370,7 +370,7 @@ export async function getSuperAdminDashboardTopOrganizers(user: AuthenticatedUse
 
         return right.eventsCount - left.eventsCount;
       })
-      .slice(0, 10),
+      .slice(0, 3),
   };
 }
 
@@ -444,6 +444,6 @@ export async function getSuperAdminDashboardTopEvents(user: AuthenticatedUser): 
 
         return right.ticketsSold - left.ticketsSold;
       })
-      .slice(0, 10),
+      .slice(0, 3),
   };
 }

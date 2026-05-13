@@ -26,8 +26,8 @@ function EventAttendeesPage() {
         tone: 'brand' as const,
       },
       {
-        label: 'Confirmed Bookings',
-        value: statsLoading ? '--' : stats.confirmedBookings,
+        label: 'Counted Bookings',
+        value: statsLoading ? '--' : stats.countedBookings,
         helper: `${stats.cancelledBookings} cancelled`,
         icon: Users,
         tone: 'emerald' as const,
@@ -40,7 +40,7 @@ function EventAttendeesPage() {
         tone: 'amber' as const,
       },
     ],
-    [stats.attendeeLimit, stats.cancelledBookings, stats.confirmedBookings, stats.remainingSeats, stats.totalBookings, stats.totalTicketsSold, statsLoading],
+    [stats.attendeeLimit, stats.cancelledBookings, stats.countedBookings, stats.remainingSeats, stats.totalBookings, stats.totalTicketsSold, statsLoading],
   );
 
   return (
@@ -64,7 +64,7 @@ function EventAttendeesPage() {
         {statCards.map((card) => (
           <TicketAnalyticsCard key={card.label} {...card} />
         ))}
-        <RevenueCard label="Revenue" value={statsLoading ? 0 : stats.totalRevenue} helper="Confirmed bookings only" />
+        <RevenueCard label="Revenue" value={statsLoading ? 0 : stats.totalRevenue} helper="Counted bookings only" />
       </div>
 
       <Card className="rounded-xl p-4 shadow-sm">

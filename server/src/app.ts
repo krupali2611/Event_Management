@@ -1,5 +1,6 @@
 import cors from 'cors';
 import express from 'express';
+import { env } from './config/env';
 import apiRouter from './routes';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 
@@ -7,7 +8,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: ['http://localhost:5173'],
+    origin: [env.clientUrl],
     credentials: true,
   }),
 );

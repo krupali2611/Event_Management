@@ -49,6 +49,10 @@ function formatRevenue(amount: number): string {
   }).format(amount);
 }
 
+function getCountedBookings(stats?: TicketEventStats): number {
+  return stats?.countedBookings ?? stats?.confirmedBookings ?? 0;
+}
+
 function EventCard({ event, stats }: { event: EventItem; stats?: TicketEventStats }) {
   const location = useLocation();
   const eventsBasePath = location.pathname.startsWith('/admin') ? '/admin/events' : '/organizer/events';
@@ -150,7 +154,7 @@ function EventCard({ event, stats }: { event: EventItem; stats?: TicketEventStat
           </div>
           <div>
             <p className="uppercase tracking-[0.18em] text-slate-400">Bookings</p>
-            <p className="mt-2 text-[1.65rem] font-semibold leading-none text-slate-900">{stats?.confirmedBookings ?? 0}</p>
+            <p className="mt-2 text-[1.65rem] font-semibold leading-none text-slate-900">{getCountedBookings(stats)}</p>
           </div>
         </div>
 

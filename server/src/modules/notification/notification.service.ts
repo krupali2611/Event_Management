@@ -580,6 +580,9 @@ export async function getReminderCandidates(type: 'EVENT_REMINDER_24H' | 'EVENT_
           lte: endBoundary,
           gte: new Date(now.getTime() - 24 * 60 * 60 * 1000),
         },
+        endDate: {
+          gte: now,
+        },
       },
       user: {
         isActive: true,
@@ -623,6 +626,12 @@ export async function getReminderCandidates(type: 'EVENT_REMINDER_24H' | 'EVENT_
     },
   }).then((bookings) =>
     bookings.filter((booking) => {
+      const eventEnd = resolveDateTimeBoundary(booking.event.endDate, booking.event.endTime, true);
+
+      if (eventEnd < now) {
+        return false;
+      }
+
       const eventStart = resolveDateTimeBoundary(booking.event.startDate, booking.event.startTime, false);
       return eventStart >= startBoundary && eventStart <= endBoundary;
     }),

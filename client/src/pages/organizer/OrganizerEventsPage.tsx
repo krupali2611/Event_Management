@@ -49,7 +49,7 @@ function OrganizerEventsPage() {
     const now = Date.now();
     const totals = Object.values(statsByEventId).reduce(
       (accumulator, stat) => {
-        accumulator.bookings += stat.confirmedBookings;
+        accumulator.bookings += stat.countedBookings ?? stat.confirmedBookings;
         accumulator.revenue += stat.totalRevenue;
         return accumulator;
       },
@@ -67,7 +67,7 @@ function OrganizerEventsPage() {
   const summaryCards = [
     { label: eventsLabel, value: overview.totalEvents, helper: 'Across your current workspace', icon: CalendarDays, accent: 'from-violet-100 to-violet-50 text-violet-600' },
     { label: 'Upcoming Events', value: overview.upcomingEvents, helper: 'Scheduled from visible results', icon: CalendarDays, accent: 'from-emerald-100 to-emerald-50 text-emerald-600' },
-    { label: 'Total Bookings', value: overview.totalBookings, helper: 'Confirmed attendee bookings', icon: Ticket, accent: 'from-amber-100 to-amber-50 text-amber-600' },
+    { label: 'Total Bookings', value: overview.totalBookings, helper: 'Counted attendee bookings', icon: Ticket, accent: 'from-amber-100 to-amber-50 text-amber-600' },
     { label: 'Revenue', value: new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(overview.totalRevenue), helper: 'For loaded event analytics', icon: IndianRupee, accent: 'from-blue-100 to-blue-50 text-blue-600' },
   ];
 

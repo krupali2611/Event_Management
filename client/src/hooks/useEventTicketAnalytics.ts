@@ -31,6 +31,7 @@ const emptyStats: TicketEventStats = {
   totalRevenue: 0,
   totalBookings: 0,
   cancelledBookings: 0,
+  countedBookings: 0,
   confirmedBookings: 0,
 };
 

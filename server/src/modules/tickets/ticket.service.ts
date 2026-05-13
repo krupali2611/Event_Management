@@ -116,6 +116,7 @@ export interface TicketEventStatsDto {
   totalRevenue: number;
   totalBookings: number;
   cancelledBookings: number;
+  countedBookings: number;
   confirmedBookings: number;
 }
 
@@ -764,6 +765,7 @@ export async function getEventTicketStats(eventId: string, user: AuthenticatedUs
     totalRevenue: stats.totalRevenue,
     totalBookings: stats.totalBookings,
     cancelledBookings: stats.cancelledBookings,
+    countedBookings: stats.confirmedBookings,
     confirmedBookings: stats.confirmedBookings,
   };
 }

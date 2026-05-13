@@ -317,7 +317,14 @@ function EventDetailPage() {
   const eventStatus = event.status;
   const canBookEvent = !isPrivateWorkspace && event.status === 'PUBLISHED' && event.lifecycleStatus === 'UPCOMING';
   const soldOut = event.remainingSeats <= 0;
-  const statusActionLabel = event.status === 'DRAFT' ? 'Publish Event' : event.status === 'PUBLISHED' ? 'Cancel Event' : null;
+  const statusActionLabel =
+    event.status === 'DRAFT'
+      ? 'Publish Event'
+      : event.lifecycleStatus === 'COMPLETED' && event.isDeletable
+        ? 'Delete Event'
+        : event.status === 'PUBLISHED'
+          ? 'Cancel Event'
+          : null;
   const currentImage = primaryImage;
   const previewImages = [primaryImage, ...galleryImages];
   const activeLightboxIndex = lightboxIndex ?? 0;
@@ -542,13 +549,25 @@ function EventDetailPage() {
             {statusActionLabel && canManageEvent ? (
               <div className={`mt-6 flex flex-wrap items-center justify-between gap-3 rounded-[22px] border px-4 py-4 ${attendeeTheme.calloutBorder} ${attendeeTheme.calloutBackground} ${attendeeTheme.calloutShadow}`}>
                 <div>
-                  <p className={`text-sm font-semibold ${attendeeTheme.contentTitle}`}>Quick status control</p>
+                  <p className={`text-sm font-semibold ${attendeeTheme.contentTitle}`}>Quick event control</p>
                   <p className="mt-1 text-sm text-[#64748B]">Update this event lifecycle without leaving the profile.</p>
                 </div>
                 <Button
-                  variant={eventStatus === 'PUBLISHED' ? 'danger' : 'primary'}
+                  variant={eventStatus === 'PUBLISHED' || statusActionLabel === 'Delete Event' ? 'danger' : 'primary'}
                   disabled={submitting}
-                  onClick={() => (eventStatus === 'PUBLISHED' ? setShowCancelModal(true) : void handleStatusAction())}
+                  onClick={() => {
+                    if (statusActionLabel === 'Delete Event') {
+                      setShowDeleteModal(true);
+                      return;
+                    }
+
+                    if (eventStatus === 'PUBLISHED') {
+                      setShowCancelModal(true);
+                      return;
+                    }
+
+                    void handleStatusAction();
+                  }}
                   className="h-[52px] rounded-2xl px-5 shadow-[0_12px_28px_rgba(37,99,255,0.18)]"
                 >
                   {submitting ? 'Updating...' : statusActionLabel}
@@ -600,8 +619,8 @@ function EventDetailPage() {
             accentClass="bg-[linear-gradient(135deg,#DBEAFE_0%,#EFF6FF_100%)] text-[#2563FF]"
           />
           <StatCard
-            label="Confirmed Bookings"
-            value={statsLoading ? '--' : ticketStats?.confirmedBookings ?? 0}
+            label="Counted Bookings"
+            value={statsLoading ? '--' : ticketStats?.countedBookings ?? ticketStats?.confirmedBookings ?? 0}
             helper={`${statsLoading ? '--' : ticketStats?.cancelledBookings ?? 0} cancelled`}
             icon={Users}
             accentClass="bg-[linear-gradient(135deg,#D1FAE5_0%,#ECFDF5_100%)] text-emerald-600"
@@ -623,7 +642,7 @@ function EventDetailPage() {
           <StatCard
             label="Revenue"
             value={statsLoading ? '--' : formatRevenue(ticketStats?.totalRevenue ?? 0)}
-            helper="Confirmed bookings only"
+            helper="Counted bookings only"
             icon={IndianRupee}
             accentClass="bg-[linear-gradient(135deg,#E0E7FF_0%,#EEF2FF_100%)] text-indigo-600"
           />

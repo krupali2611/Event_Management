@@ -82,6 +82,7 @@ export interface TicketEventStats {
   totalRevenue: number;
   totalBookings: number;
   cancelledBookings: number;
+  countedBookings: number;
   confirmedBookings: number;
 }
 

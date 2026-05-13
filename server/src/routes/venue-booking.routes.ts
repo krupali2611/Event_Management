@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   checkVenueBookingAvailabilityController,
+  createVenueBookingController,
   getVenueBookingController,
   getVenueBookingsController,
 } from '../controllers/venue-booking.controller';
@@ -12,6 +13,7 @@ const venueBookingRouter = Router();
 
 venueBookingRouter.use(authenticate);
 venueBookingRouter.get('/', requireRole('ADMIN', 'SUPER_ADMIN', 'ORGANIZER'), asyncHandler(getVenueBookingsController));
+venueBookingRouter.post('/', requireRole('ADMIN', 'SUPER_ADMIN', 'ORGANIZER'), asyncHandler(createVenueBookingController));
 venueBookingRouter.post(
   '/check-availability',
   requireRole('ADMIN', 'SUPER_ADMIN', 'ORGANIZER'),

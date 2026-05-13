@@ -17,7 +17,11 @@ function isAllowedRedirectForRole(role: UserRole, path: string): boolean {
     return false;
   }
 
-  if (path === '/notifications' || path === '/my-tickets') {
+  if (path === '/notifications') {
+    return true;
+  }
+
+  if (path === '/my-tickets') {
     return role === 'ATTENDEE';
   }
 
