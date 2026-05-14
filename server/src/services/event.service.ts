@@ -27,6 +27,7 @@ type EventRecord = Pick<
   Event,
   'id' | 'title' | 'description' | 'category' | 'startDate' | 'endDate' | 'startTime' | 'endTime' | 'attendeeLimit' | 'venueId' | 'organizerId' | 'status' | 'createdAt' | 'updatedAt'
 > & {
+  clientRequestId?: string | null;
   bannerImage?: string | null;
   bannerImagePublicId?: string | null;
   galleryImages?: string[];
@@ -193,7 +194,8 @@ async function withEventSchemaRetry<T>(operation: () => Promise<T>): Promise<T> 
   } catch (error) {
     if (
       !isMissingEventColumnError(error, 'bannerImagePublicId') &&
-      !isMissingEventColumnError(error, 'galleryImagePublicIds')
+      !isMissingEventColumnError(error, 'galleryImagePublicIds') &&
+      !isMissingEventColumnError(error, 'clientRequestId')
     ) {
       throw error;
     }
@@ -214,6 +216,7 @@ function toSqlTextArray(values: string[]): Prisma.Sql {
 async function createEventRecord(
   executor: Prisma.TransactionClient,
   payload: {
+    clientRequestId: string | null;
     title: string;
     description: string | null;
     bannerImage: string | null;
@@ -232,12 +235,16 @@ async function createEventRecord(
   optionalImageData: Record<string, string | string[] | null>,
   optionalScalarData: Record<string, number>,
 ): Promise<{ id: string; status: EventStatus }> {
-  const hasBannerImagePublicId = await supportsEventDatabaseField('bannerImagePublicId');
-  const hasGalleryImagePublicIds = await supportsEventDatabaseField('galleryImagePublicIds');
+  const [hasBannerImagePublicId, hasGalleryImagePublicIds, hasClientRequestId] = await Promise.all([
+    supportsEventDatabaseField('bannerImagePublicId'),
+    supportsEventDatabaseField('galleryImagePublicIds'),
+    supportsEventDatabaseField('clientRequestId'),
+  ]);
 
-  if (hasBannerImagePublicId && hasGalleryImagePublicIds) {
+  if (hasBannerImagePublicId && hasGalleryImagePublicIds && hasClientRequestId) {
     return executor.event.create({
       data: {
+        clientRequestId: payload.clientRequestId,
         title: payload.title,
         description: payload.description,
         ...optionalImageData,
@@ -261,6 +268,7 @@ async function createEventRecord(
 
   const insertedRows = await executor.$queryRaw<Array<{ id: string; status: EventStatus }>>`
     INSERT INTO "Event" (
+      "clientRequestId",
       "title",
       "description",
       "bannerImage",
@@ -277,6 +285,7 @@ async function createEventRecord(
       "status"
     )
     VALUES (
+      ${payload.clientRequestId},
       ${payload.title},
       ${payload.description},
       ${payload.bannerImage},
@@ -335,13 +344,24 @@ async function getOptionalEventScalarData(input: {
   };
 }
 
+async function getOptionalEventRequestData(input: {
+  clientRequestId?: string | null;
+}): Promise<Record<string, string | null>> {
+  const hasClientRequestId = await supportsEventDatabaseField('clientRequestId');
+
+  return {
+    ...(hasClientRequestId && input.clientRequestId !== undefined ? { clientRequestId: input.clientRequestId } : {}),
+  };
+}
+
 async function getEventSelect(includeRelations = false): Promise<Record<string, unknown>> {
-  const [hasBannerImage, hasBannerImagePublicId, hasGalleryImages, hasGalleryImagePublicIds, hasTicketPrice] = await Promise.all([
+  const [hasBannerImage, hasBannerImagePublicId, hasGalleryImages, hasGalleryImagePublicIds, hasTicketPrice, hasClientRequestId] = await Promise.all([
     supportsEventDatabaseField('bannerImage'),
     supportsEventDatabaseField('bannerImagePublicId'),
     supportsEventDatabaseField('galleryImages'),
     supportsEventDatabaseField('galleryImagePublicIds'),
     supportsEventDatabaseField('ticketPrice'),
+    supportsEventDatabaseField('clientRequestId'),
   ]);
 
   return {
@@ -359,6 +379,7 @@ async function getEventSelect(includeRelations = false): Promise<Record<string, 
     status: true,
     createdAt: true,
     updatedAt: true,
+    ...(hasClientRequestId ? { clientRequestId: true } : {}),
     ...(hasBannerImage ? { bannerImage: true } : {}),
     ...(hasBannerImagePublicId ? { bannerImagePublicId: true } : {}),
     ...(hasGalleryImages ? { galleryImages: true } : {}),
@@ -490,6 +511,40 @@ export function getEventStatus(event: Pick<Event, 'status' | 'startDate' | 'endD
 
 function isEventVisibleToAttendees(event: Pick<Event, 'status' | 'startDate' | 'endDate' | 'startTime' | 'endTime'>): boolean {
   return event.status === 'PUBLISHED' && getEventStatus(event) === 'UPCOMING';
+}
+
+function getEventListPriority(event: Pick<Event, 'status' | 'startDate' | 'endDate' | 'startTime' | 'endTime'>): number {
+  const lifecycleStatus = getEventStatus(event);
+
+  if (event.status === 'CANCELLED' || lifecycleStatus === 'CANCELLED') {
+    return 3;
+  }
+
+  if (lifecycleStatus === 'COMPLETED') {
+    return 2;
+  }
+
+  if (lifecycleStatus === 'ONGOING') {
+    return 0;
+  }
+
+  return 1;
+}
+
+function compareEventsForList(left: EventRecord, right: EventRecord): number {
+  const priorityDifference = getEventListPriority(left) - getEventListPriority(right);
+
+  if (priorityDifference !== 0) {
+    return priorityDifference;
+  }
+
+  const startDateDifference = left.startDate.getTime() - right.startDate.getTime();
+
+  if (startDateDifference !== 0) {
+    return startDateDifference;
+  }
+
+  return right.createdAt.getTime() - left.createdAt.getTime();
 }
 
 function ensureValidDateRange(startDate: Date, endDate: Date): void {
@@ -866,6 +921,20 @@ async function validateVenueCapacity(venueId: string | null | undefined, attende
   }
 }
 
+async function findEventByClientRequestId(clientRequestId: string | undefined, organizerId: string): Promise<EventRecord | null> {
+  if (!clientRequestId || !(await supportsEventDatabaseField('clientRequestId'))) {
+    return null;
+  }
+
+  return (await getEventDelegate().findFirst({
+    where: {
+      clientRequestId,
+      organizerId,
+    },
+    select: (await getEventSelect(true)) as never,
+  })) as EventRecord | null;
+}
+
 export async function createEvent(payload: CreateEventInput, actor: AuthenticatedUser): Promise<EventDto> {
   const eventDelegate = getEventDelegate();
   const normalizedPayload = normalizeEventPayload(payload);
@@ -873,78 +942,103 @@ export async function createEvent(payload: CreateEventInput, actor: Authenticate
   const endDate = new Date(normalizedPayload.endDate);
   ensureValidDateRange(startDate, endDate);
   ensureStartDateIsFuture(startDate);
+  const existingEventForRequest = await findEventByClientRequestId(normalizedPayload.clientRequestId, normalizedPayload.organizerId);
 
-  const createdEvent = await withEventSchemaRetry(() =>
-    prisma.$transaction(async (transaction) => {
-      await validateVenueCapacity(normalizedPayload.venueId, normalizedPayload.attendeeLimit, transaction);
-      await ensureExactEventScheduleIsUnique({
-        executor: transaction,
-        startDate,
-        endDate,
-        startTime: normalizedPayload.startTime ?? null,
-        endTime: normalizedPayload.endTime ?? null,
-      });
+  if (existingEventForRequest) {
+    return toEventDto((await attachTicketMetrics([existingEventForRequest]))[0]!);
+  }
 
-      if (normalizedPayload.venueId) {
-        await ensureVenueScheduleConflictFree({
+  let createdEvent: { id: string; status: EventStatus };
+
+  try {
+    createdEvent = await withEventSchemaRetry(() =>
+      prisma.$transaction(async (transaction) => {
+        await validateVenueCapacity(normalizedPayload.venueId, normalizedPayload.attendeeLimit, transaction);
+        await ensureExactEventScheduleIsUnique({
+          executor: transaction,
+          startDate,
+          endDate,
+          startTime: normalizedPayload.startTime ?? null,
+          endTime: normalizedPayload.endTime ?? null,
+        });
+
+        if (normalizedPayload.venueId) {
+          await ensureVenueScheduleConflictFree({
+            executor: transaction,
+            venueId: normalizedPayload.venueId,
+            startDate,
+            endDate,
+            startTime: normalizedPayload.startTime ?? null,
+            endTime: normalizedPayload.endTime ?? null,
+          });
+        }
+
+        const [optionalImageData, optionalScalarData, optionalRequestData] = await Promise.all([
+          getOptionalEventImageData({
+            bannerImage: normalizedPayload.bannerImage ?? null,
+            bannerImagePublicId: normalizedPayload.bannerImagePublicId ?? null,
+            galleryImages: normalizedPayload.galleryImages ?? [],
+            galleryImagePublicIds: normalizedPayload.galleryImagePublicIds ?? [],
+          }),
+          getOptionalEventScalarData({ ticketPrice: normalizedPayload.ticketPrice }),
+          getOptionalEventRequestData({ clientRequestId: normalizedPayload.clientRequestId ?? null }),
+        ]);
+
+        const event = await createEventRecord(
+          transaction,
+          {
+            clientRequestId: typeof optionalRequestData.clientRequestId === 'string' ? optionalRequestData.clientRequestId : null,
+            title: normalizedPayload.title,
+            description: normalizedPayload.description ?? null,
+            bannerImage: normalizedPayload.bannerImage ?? null,
+            galleryImages: normalizedPayload.galleryImages ?? [],
+            category: normalizedPayload.category,
+            ticketPrice: normalizedPayload.ticketPrice,
+            startDate,
+            endDate,
+            startTime: normalizedPayload.startTime ?? null,
+            endTime: normalizedPayload.endTime ?? null,
+            attendeeLimit: normalizedPayload.attendeeLimit,
+            venueId: normalizedPayload.venueId ?? null,
+            organizerId: normalizedPayload.organizerId,
+            status: normalizedPayload.status ?? 'DRAFT',
+          },
+          optionalImageData,
+          optionalScalarData,
+        );
+
+        if (!normalizedPayload.venueId || event.status !== 'PUBLISHED') {
+          return event;
+        }
+
+        await reserveVenueForPublishedEvent(event.id, {
           executor: transaction,
           venueId: normalizedPayload.venueId,
           startDate,
           endDate,
           startTime: normalizedPayload.startTime ?? null,
           endTime: normalizedPayload.endTime ?? null,
+          createdById: normalizedPayload.organizerId,
         });
-      }
 
-      const [optionalImageData, optionalScalarData] = await Promise.all([
-        getOptionalEventImageData({
-          bannerImage: normalizedPayload.bannerImage ?? null,
-          bannerImagePublicId: normalizedPayload.bannerImagePublicId ?? null,
-          galleryImages: normalizedPayload.galleryImages ?? [],
-          galleryImagePublicIds: normalizedPayload.galleryImagePublicIds ?? [],
-        }),
-        getOptionalEventScalarData({ ticketPrice: normalizedPayload.ticketPrice }),
-      ]);
-
-      const event = await createEventRecord(
-        transaction,
-        {
-          title: normalizedPayload.title,
-          description: normalizedPayload.description ?? null,
-          bannerImage: normalizedPayload.bannerImage ?? null,
-          galleryImages: normalizedPayload.galleryImages ?? [],
-          category: normalizedPayload.category,
-          ticketPrice: normalizedPayload.ticketPrice,
-          startDate,
-          endDate,
-          startTime: normalizedPayload.startTime ?? null,
-          endTime: normalizedPayload.endTime ?? null,
-          attendeeLimit: normalizedPayload.attendeeLimit,
-          venueId: normalizedPayload.venueId ?? null,
-          organizerId: normalizedPayload.organizerId,
-          status: normalizedPayload.status ?? 'DRAFT',
-        },
-        optionalImageData,
-        optionalScalarData,
-      );
-
-      if (!normalizedPayload.venueId || event.status !== 'PUBLISHED') {
         return event;
+      }),
+    );
+  } catch (error) {
+    if (
+      normalizedPayload.clientRequestId &&
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      const duplicateEvent = await findEventByClientRequestId(normalizedPayload.clientRequestId, normalizedPayload.organizerId);
+
+      if (duplicateEvent) {
+        return toEventDto((await attachTicketMetrics([duplicateEvent]))[0]!);
       }
+    }
 
-      await reserveVenueForPublishedEvent(event.id, {
-        executor: transaction,
-        venueId: normalizedPayload.venueId,
-        startDate,
-        endDate,
-        startTime: normalizedPayload.startTime ?? null,
-        endTime: normalizedPayload.endTime ?? null,
-        createdById: normalizedPayload.organizerId,
-      });
-
-      return event;
-    }),
-  );
+    throw error;
+  }
 
   const event = (await eventDelegate.findUnique({ where: { id: createdEvent.id }, select: (await getEventSelect(true)) as never })) as EventRecord | null;
 
@@ -953,7 +1047,11 @@ export async function createEvent(payload: CreateEventInput, actor: Authenticate
   }
 
   if (actor.role === 'ORGANIZER') {
-    await sendNewEventCreatedNotificationToAdmins(await getEventNotificationContext(createdEvent.id));
+    try {
+      await sendNewEventCreatedNotificationToAdmins(await getEventNotificationContext(createdEvent.id));
+    } catch (error) {
+      console.error('[event:create] Admin notification failed after event creation', error);
+    }
   }
 
   return toEventDto((await attachTicketMetrics([event]))[0]!);
@@ -1022,7 +1120,7 @@ export async function getEvents(query: EventListQuery, user: AuthenticatedUser):
         getEventDelegate().count({ where: whereClause }),
       ]);
 
-  const eventsWithMetrics = await attachTicketMetrics(items as EventRecord[]);
+  const eventsWithMetrics = (await attachTicketMetrics(items as EventRecord[])).sort(compareEventsForList);
   const attendeeVisibleEvents = isAttendeeQuery ? eventsWithMetrics.filter(isEventVisibleToAttendees) : eventsWithMetrics;
   const paginatedEvents = isAttendeeQuery ? attendeeVisibleEvents.slice(skip, skip + query.limit) : attendeeVisibleEvents;
   const resolvedTotalItems = isAttendeeQuery ? attendeeVisibleEvents.length : totalItems;

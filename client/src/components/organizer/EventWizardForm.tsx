@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle2, ImagePlus, MapPin, Users, X } from 'lucide-react';
 import { useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from 'react';
+import { useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import Button from '@/components/ui/Button';
@@ -117,6 +118,7 @@ function EventWizardForm({
   mode?: 'create' | 'edit';
   footerAction?: ReactNode;
 }) {
+  const createRequestIdRef = useRef(mode === 'create' ? crypto.randomUUID() : undefined);
   const tomorrowDate = useMemo(() => getTomorrowDateValue(), []);
   const [availability, setAvailability] = useState<BookingAvailability | null>(initialEvent?.venueId ? { available: true } : null);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
@@ -285,6 +287,7 @@ function EventWizardForm({
     }
 
     const payload: EventPayload = {
+      ...(mode === 'create' && createRequestIdRef.current ? { clientRequestId: createRequestIdRef.current } : {}),
       title: formValues.title.trim(),
       description: formValues.description?.trim() || undefined,
       bannerImage: bannerImageFile ? undefined : bannerPreview,

@@ -75,6 +75,7 @@ model User {
 
 model Event {
   id             String          @id @default(uuid())
+  clientRequestId String?        @unique
   title          String
   description    String?
   bannerImage    String?
@@ -101,6 +102,7 @@ model Event {
   feedbacks      Feedback[]
 
   @@index([organizerId])
+  @@index([clientRequestId])
   @@index([venueId])
   @@index([category])
   @@index([status])

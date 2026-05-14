@@ -2,6 +2,7 @@ import type { Response } from 'express';
 import {
   createVenue,
   deactivateVenue,
+  getVenueDeactivationImpact,
   getVenueAvailability,
   getVenueById,
   getVenues,
@@ -10,7 +11,14 @@ import {
 } from '../services/venue.service';
 import type { ApiResponse } from '../types/api';
 import type { AuthenticatedRequest } from '../types/auth.types';
-import type { PaginatedVenuesData, VenueAvailabilityResult, VenueDto, VenueImageUploadDto } from '../types/venue.types';
+import type {
+  PaginatedVenuesData,
+  VenueAvailabilityResult,
+  VenueDeactivationImpactDto,
+  VenueDto,
+  VenueImageUploadDto,
+  VenueStatusChangeDto,
+} from '../types/venue.types';
 import {
   createVenueBodySchema,
   venueIdParamSchema,
@@ -72,11 +80,20 @@ export async function deactivateVenueController(
 
 export async function toggleVenueStatusController(
   request: AuthenticatedRequest,
-  response: Response<ApiResponse<VenueDto>>,
+  response: Response<ApiResponse<VenueStatusChangeDto>>,
 ): Promise<void> {
   const { id } = venueIdParamSchema.parse(request.params);
   const venue = await toggleVenueStatus(id);
-  sendSuccess(response, 200, `Venue ${venue.isActive ? 'activated' : 'deactivated'} successfully`, venue);
+  sendSuccess(response, 200, `Venue ${venue.venue.isActive ? 'activated' : 'deactivated'} successfully`, venue);
+}
+
+export async function getVenueDeactivationImpactController(
+  request: AuthenticatedRequest,
+  response: Response<ApiResponse<VenueDeactivationImpactDto>>,
+): Promise<void> {
+  const { id } = venueIdParamSchema.parse(request.params);
+  const impact = await getVenueDeactivationImpact(id);
+  sendSuccess(response, 200, 'Venue deactivation impact fetched successfully', impact);
 }
 
 export async function getVenueAvailabilityController(

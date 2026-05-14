@@ -13,6 +13,30 @@ export interface VenueDto {
   updatedAt: Date;
 }
 
+export interface VenueDeactivationConflictDto {
+  bookingId: string;
+  eventId: string;
+  eventTitle: string;
+  startDate: Date;
+  endDate: Date;
+  startTime: string | null;
+  endTime: string | null;
+}
+
+export interface VenueDeactivationImpactDto {
+  venue: VenueDto;
+  hasConflicts: boolean;
+  conflicts: VenueDeactivationConflictDto[];
+  confirmationMessage: string;
+}
+
+export interface VenueStatusChangeDto {
+  venue: VenueDto;
+  hasConflicts: boolean;
+  conflicts: VenueDeactivationConflictDto[];
+  confirmationMessage?: string;
+}
+
 export interface VenueListItemDto extends VenueDto {}
 
 export interface PaginationDto {

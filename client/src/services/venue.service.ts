@@ -1,5 +1,13 @@
 import { httpClient } from '@/api/httpClient';
-import type { VenueImageUploadResponse, VenueListFilters, VenuePayload, VenueResponse, VenuesResponse } from '@/types/venue.types';
+import type {
+  VenueDeactivationImpactResponse,
+  VenueImageUploadResponse,
+  VenueListFilters,
+  VenuePayload,
+  VenueResponse,
+  VenueStatusChangeResponse,
+  VenuesResponse,
+} from '@/types/venue.types';
 
 export const venueService = {
   async getVenues(filters: VenueListFilters): Promise<VenuesResponse> {
@@ -47,8 +55,13 @@ export const venueService = {
     return response.data;
   },
 
-  async toggleVenueStatus(venueId: string): Promise<VenueResponse> {
-    const response = await httpClient.patch<VenueResponse>(`/venues/${venueId}/status`);
+  async getVenueDeactivationImpact(venueId: string): Promise<VenueDeactivationImpactResponse> {
+    const response = await httpClient.get<VenueDeactivationImpactResponse>(`/venues/${venueId}/deactivation-impact`);
+    return response.data;
+  },
+
+  async toggleVenueStatus(venueId: string): Promise<VenueStatusChangeResponse> {
+    const response = await httpClient.patch<VenueStatusChangeResponse>(`/venues/${venueId}/status`);
     return response.data;
   },
 

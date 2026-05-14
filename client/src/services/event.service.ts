@@ -79,6 +79,7 @@ export const eventService = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      timeout: 60000,
     });
     return response.data;
   },
@@ -88,6 +89,7 @@ export const eventService = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      timeout: 60000,
     });
     return response.data;
   },

@@ -1,12 +1,15 @@
-import { Prisma, type Venue } from '@prisma/client';
+import { Prisma, VENUE_BOOKING_STATUS, type Venue } from '@prisma/client';
 import { prisma } from '../config/prisma';
 import type {
   CreateVenueInput,
   PaginatedVenuesData,
   UpdateVenueInput,
   VenueAvailabilityQuery,
+  VenueDeactivationConflictDto,
+  VenueDeactivationImpactDto,
   VenueDto,
   VenueListQuery,
+  VenueStatusChangeDto,
 } from '../types/venue.types';
 import { deleteFromCloudinary } from '../utils/deleteFromCloudinary';
 import { AppError } from '../utils/response';
@@ -328,16 +331,82 @@ export async function deactivateVenue(id: string): Promise<VenueDto> {
   return toVenueDto(venue as VenueRecord);
 }
 
-export async function toggleVenueStatus(id: string): Promise<VenueDto> {
+async function getVenueDeactivationConflicts(id: string): Promise<VenueDeactivationConflictDto[]> {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const bookings = await prisma.venueBooking.findMany({
+    where: {
+      venueId: id,
+      eventId: { not: null },
+      status: VENUE_BOOKING_STATUS.BOOKED,
+      endDate: { gte: today },
+    },
+    select: {
+      id: true,
+      eventId: true,
+      startDate: true,
+      endDate: true,
+      startTime: true,
+      endTime: true,
+      event: {
+        select: {
+          title: true,
+        },
+      },
+    },
+    orderBy: [{ startDate: 'asc' }, { startTime: 'asc' }, { createdAt: 'asc' }],
+  });
+
+  return bookings
+    .filter((booking): booking is typeof booking & { eventId: string } => Boolean(booking.eventId))
+    .map((booking) => ({
+      bookingId: booking.id,
+      eventId: booking.eventId,
+      eventTitle: booking.event?.title ?? 'Untitled event',
+      startDate: booking.startDate,
+      endDate: booking.endDate,
+      startTime: booking.startTime,
+      endTime: booking.endTime,
+    }));
+}
+
+function buildVenueDeactivationConfirmationMessage(venueName: string, conflicts: VenueDeactivationConflictDto[]): string {
+  if (conflicts.length === 0) {
+    return `${venueName} will be deactivated. It will not appear for new event bookings.`;
+  }
+
+  return `${venueName} is already booked for ${conflicts.length} event${conflicts.length > 1 ? 's' : ''}. If you deactivate it, the venue will not appear for new events, but existing booked events will keep their current venue as it is.`;
+}
+
+export async function getVenueDeactivationImpact(id: string): Promise<VenueDeactivationImpactDto> {
+  const venue = await ensureVenueExists(id);
+  const conflicts = await getVenueDeactivationConflicts(id);
+
+  return {
+    venue: toVenueDto(venue),
+    hasConflicts: conflicts.length > 0,
+    conflicts,
+    confirmationMessage: buildVenueDeactivationConfirmationMessage(venue.name, conflicts),
+  };
+}
+
+export async function toggleVenueStatus(id: string): Promise<VenueStatusChangeDto> {
   const venueDelegate = getVenueDelegate();
   const existingVenue = await ensureVenueExists(id);
+  const conflicts = existingVenue.isActive ? await getVenueDeactivationConflicts(id) : [];
   const venue = await venueDelegate.update({
     where: { id },
     data: { isActive: !existingVenue.isActive },
     select: (await getVenueSelect()) as never,
   });
 
-  return toVenueDto(venue as VenueRecord);
+  return {
+    venue: toVenueDto(venue as VenueRecord),
+    hasConflicts: conflicts.length > 0,
+    conflicts,
+    ...(existingVenue.isActive ? { confirmationMessage: buildVenueDeactivationConfirmationMessage(existingVenue.name, conflicts) } : {}),
+  };
 }
 
 export async function getVenueAvailability(venueId: string, dateRange: VenueAvailabilityQuery) {

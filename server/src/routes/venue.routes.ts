@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   createVenueController,
   deactivateVenueController,
+  getVenueDeactivationImpactController,
   getVenueAvailabilityController,
   getVenueController,
   getVenuesController,
@@ -25,6 +26,7 @@ venueRouter.post(
   venueImageUpload.single('image'),
   asyncHandler(uploadVenueImageController),
 );
+venueRouter.get('/:id/deactivation-impact', requireRole('ADMIN', 'SUPER_ADMIN'), asyncHandler(getVenueDeactivationImpactController));
 venueRouter.get('/:id', requireRole('ADMIN', 'SUPER_ADMIN', 'ORGANIZER'), asyncHandler(getVenueController));
 venueRouter.get('/:id/availability', requireRole('ADMIN', 'SUPER_ADMIN', 'ORGANIZER'), asyncHandler(getVenueAvailabilityController));
 venueRouter.put('/:id', requireRole('ADMIN', 'SUPER_ADMIN'), asyncHandler(updateVenueController));

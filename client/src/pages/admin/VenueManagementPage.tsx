@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import VenueFilters from '@/components/admin/VenueFilters';
 import VenueTable from '@/components/admin/VenueTable';
+import Modal from '@/components/ui/Modal';
+import Button from '@/components/ui/Button';
 import { venueService } from '@/services/venue.service';
-import type { Venue, VenueListData, VenueListFilters } from '@/types/venue.types';
+import type { Venue, VenueDeactivationImpact, VenueListData, VenueListFilters } from '@/types/venue.types';
 import { getApiErrorMessage } from '@/utils/getApiErrorMessage';
 
 const defaultFilters: VenueListFilters = {
@@ -37,7 +39,27 @@ function VenueManagementPage() {
   const [error, setError] = useState<string | null>(null);
   const [togglingVenueId, setTogglingVenueId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [deactivationImpact, setDeactivationImpact] = useState<VenueDeactivationImpact | null>(null);
+  const [deactivationLoadingVenueId, setDeactivationLoadingVenueId] = useState<string | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  const formatBookingSchedule = (startDate: string, endDate: string, startTime: string | null, endTime: string | null): string => {
+    const dateFormatter = new Intl.DateTimeFormat('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+
+    const formattedStartDate = dateFormatter.format(new Date(startDate));
+    const formattedEndDate = dateFormatter.format(new Date(endDate));
+    const formattedDateRange = formattedStartDate === formattedEndDate ? formattedStartDate : `${formattedStartDate} - ${formattedEndDate}`;
+
+    if (!startTime && !endTime) {
+      return `${formattedDateRange} | Flexible time`;
+    }
+
+    return `${formattedDateRange} | ${startTime ?? '--:--'} - ${endTime ?? '--:--'}`;
+  };
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -140,7 +162,7 @@ function VenueManagementPage() {
 
     try {
       const response = await venueService.toggleVenueStatus(venue.id);
-      const updatedVenue = response.data;
+      const updatedVenue = response.data?.venue;
 
       if (updatedVenue) {
         setData((current) => ({
@@ -149,7 +171,7 @@ function VenueManagementPage() {
         }));
       }
 
-      setToast(nextIsActive ? 'Venue Activated' : 'Venue Deactivated');
+      setToast(nextIsActive ? 'Venue Activated' : response.data?.confirmationMessage ?? 'Venue Deactivated');
     } catch (requestError) {
       setData((current) => ({
         ...current,
@@ -159,6 +181,34 @@ function VenueManagementPage() {
     } finally {
       setTogglingVenueId(null);
     }
+  };
+
+  const handleVenueStatusAction = async (venue: Venue): Promise<void> => {
+    if (!venue.isActive) {
+      await handleToggleStatus(venue);
+      return;
+    }
+
+    try {
+      setError(null);
+      setDeactivationLoadingVenueId(venue.id);
+      const response = await venueService.getVenueDeactivationImpact(venue.id);
+      setDeactivationImpact(response.data ?? null);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError));
+    } finally {
+      setDeactivationLoadingVenueId(null);
+    }
+  };
+
+  const handleConfirmDeactivation = async (): Promise<void> => {
+    if (!deactivationImpact) {
+      return;
+    }
+
+    const venue = deactivationImpact.venue;
+    setDeactivationImpact(null);
+    await handleToggleStatus(venue);
   };
 
   return (
@@ -180,8 +230,8 @@ function VenueManagementPage() {
         loading={loading}
         loadingMore={loadingMore}
         hasMore={data.hasMore}
-        onToggleStatus={(venue) => void handleToggleStatus(venue)}
-        togglingVenueId={togglingVenueId}
+        onToggleStatus={(venue) => void handleVenueStatusAction(venue)}
+        togglingVenueId={togglingVenueId ?? deactivationLoadingVenueId}
         loadMoreRef={loadMoreRef}
       />
 
@@ -189,6 +239,40 @@ function VenueManagementPage() {
         <div className="pointer-events-none fixed bottom-6 right-6 z-50 rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm font-medium text-emerald-700 shadow-2xl shadow-emerald-100">
           {toast}
         </div>
+      ) : null}
+
+      {deactivationImpact ? (
+        <Modal
+          title="Deactivate Venue"
+          eyebrow="Confirmation"
+          description={deactivationImpact.confirmationMessage}
+          onClose={() => setDeactivationImpact(null)}
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setDeactivationImpact(null)}>
+                Cancel
+              </Button>
+              <Button variant="danger" onClick={() => void handleConfirmDeactivation()}>
+                Deactivate
+              </Button>
+            </>
+          }
+        >
+          <div className="space-y-4 text-sm text-slate-700">
+            {deactivationImpact.hasConflicts ? (
+              <div className="space-y-3">
+                {deactivationImpact.conflicts.map((conflict) => (
+                  <div key={conflict.bookingId} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <p className="font-semibold text-slate-900">{conflict.eventTitle}</p>
+                    <p className="mt-1 text-slate-600">
+                      {formatBookingSchedule(conflict.startDate, conflict.endDate, conflict.startTime, conflict.endTime)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </Modal>
       ) : null}
     </section>
   );

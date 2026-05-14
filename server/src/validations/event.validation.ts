@@ -42,6 +42,7 @@ export const eventListQuerySchema = z.object({
 
 export const createEventBodySchema = z
   .object({
+    clientRequestId: z.string().trim().uuid('Client request id must be a valid UUID').optional(),
     title: z.string().trim().min(1, 'Title is required').max(150, 'Title is too long'),
     description: optionalTrimmedString,
     bannerImage: optionalNullableTrimmedString,

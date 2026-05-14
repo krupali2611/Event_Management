@@ -15,6 +15,30 @@ export interface Venue {
   updatedAt: string;
 }
 
+export interface VenueDeactivationConflict {
+  bookingId: string;
+  eventId: string;
+  eventTitle: string;
+  startDate: string;
+  endDate: string;
+  startTime: string | null;
+  endTime: string | null;
+}
+
+export interface VenueDeactivationImpact {
+  venue: Venue;
+  hasConflicts: boolean;
+  conflicts: VenueDeactivationConflict[];
+  confirmationMessage: string;
+}
+
+export interface VenueStatusChange {
+  venue: Venue;
+  hasConflicts: boolean;
+  conflicts: VenueDeactivationConflict[];
+  confirmationMessage?: string;
+}
+
 export interface VenueListFilters {
   page: number;
   limit: number;
@@ -52,4 +76,6 @@ export interface VenuePayload {
 
 export type VenuesResponse = ApiResponse<VenueListData>;
 export type VenueResponse = ApiResponse<Venue>;
+export type VenueDeactivationImpactResponse = ApiResponse<VenueDeactivationImpact>;
+export type VenueStatusChangeResponse = ApiResponse<VenueStatusChange>;
 export type VenueImageUploadResponse = ApiResponse<{ imageUrl: string; publicId: string }>;

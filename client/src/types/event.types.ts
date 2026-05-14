@@ -65,6 +65,7 @@ export interface EventListData {
 }
 
 export interface EventPayload {
+  clientRequestId?: string;
   title: string;
   description?: string;
   bannerImage?: string | null;

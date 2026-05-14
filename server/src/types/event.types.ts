@@ -60,6 +60,7 @@ export interface PaginatedEventsData {
 }
 
 export interface CreateEventInput {
+  clientRequestId?: string;
   title: string;
   description?: string;
   bannerImage?: string | null;
