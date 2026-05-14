@@ -1,12 +1,12 @@
-# Graph Report - D:\krupali\Event_Management  (2026-05-13)
+# Graph Report - D:\krupali\Event_Management  (2026-05-14)
 
 ## Corpus Check
-- 216 files · ~119,665 words
+- 216 files · ~126,827 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 739 nodes · 1151 edges · 154 communities detected
-- Extraction: 77% EXTRACTED · 23% INFERRED · 0% AMBIGUOUS · INFERRED: 268 edges (avg confidence: 0.8)
+- 758 nodes · 1201 edges · 154 communities detected
+- Extraction: 77% EXTRACTED · 23% INFERRED · 0% AMBIGUOUS · INFERRED: 280 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -166,16 +166,16 @@
 - [[_COMMUNITY_Community 153|Community 153]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `sendSuccess()` - 64 edges
-2. `getApiErrorMessage()` - 31 edges
+1. `sendSuccess()` - 65 edges
+2. `getApiErrorMessage()` - 34 edges
 3. `updateEvent()` - 20 edges
-4. `createEvent()` - 13 edges
+4. `createEvent()` - 14 edges
 5. `getEventDelegate()` - 12 edges
-6. `getFeedbackDelegate()` - 11 edges
-7. `updateVenue()` - 11 edges
-8. `getTicketBookingDelegate()` - 10 edges
-9. `getEventDelegate()` - 10 edges
-10. `sendTicketStatusChangedNotification()` - 9 edges
+6. `getEventDelegate()` - 12 edges
+7. `getFeedbackDelegate()` - 11 edges
+8. `updateVenue()` - 11 edges
+9. `getTicketBookingDelegate()` - 10 edges
+10. `createTicketBooking()` - 10 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `handleImageFileChange()` --calls--> `getApiErrorMessage()`  [INFERRED]
@@ -192,56 +192,56 @@
 ## Communities
 
 ### Community 0 - "Community 0"
-Cohesion: 0.03
-Nodes (28): handleFeedbackSubmit(), loadPastEvents(), handleSubmit(), handleSubmit(), handleSubmit(), loadVenue(), loadReviews(), getApiErrorMessage() (+20 more)
+Cohesion: 0.04
+Nodes (26): handleFeedbackSubmit(), loadPastEvents(), handleSubmit(), handleSubmit(), handleSubmit(), loadVenue(), handleDeleteEvent(), handleStatusAction() (+18 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.05
-Nodes (44): buildEmailShell(), sendBrevoEmail(), dispatchReminderBatch(), sendEmailNotification(), eventCancelledEmailTemplate(), eventUpdatedEmailTemplate(), getNotificationsController(), getUnreadNotificationCountController() (+36 more)
+Cohesion: 0.08
+Nodes (62): deleteFromCloudinary(), assertEventHasNotStarted(), assertEventIsMutable(), attachTicketMetrics(), buildGalleryImageEntries(), cancelTicketBookingsForEventInTransaction(), canManageAllEvents(), canTransitionToStatus() (+54 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.09
-Nodes (54): assertEventHasNotStarted(), assertEventIsMutable(), attachTicketMetrics(), buildGalleryImageEntries(), cancelTicketBookingsForEventInTransaction(), canManageAllEvents(), canTransitionToStatus(), createEvent() (+46 more)
+Cohesion: 0.05
+Nodes (43): buildEmailShell(), sendBrevoEmail(), dispatchReminderBatch(), sendEmailNotification(), eventCancelledEmailTemplate(), eventUpdatedEmailTemplate(), getNotificationsController(), getUnreadNotificationCountController() (+35 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.08
-Nodes (36): getOrganizerDashboardRecentPurchasesController(), getOrganizerDashboardRevenueController(), getOrganizerDashboardStatsController(), getOrganizerDashboardTicketSalesController(), getSuperAdminDashboardRevenueController(), getSuperAdminDashboardRoleDistributionController(), getSuperAdminDashboardStatsController(), getSuperAdminDashboardTopEventsController() (+28 more)
+Nodes (36): getAdminDashboardEventsAnalyticsController(), getAdminDashboardEventStatusController(), getAdminDashboardRecentEventsController(), getAdminDashboardRecentUsersController(), getAdminDashboardStatsController(), getAdminDashboardUserAnalyticsController(), getSuperAdminDashboardRevenueController(), getSuperAdminDashboardRoleDistributionController() (+28 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.14
-Nodes (35): getAdminDashboardEventsAnalyticsController(), getAdminDashboardEventStatusController(), getAdminDashboardRecentEventsController(), getAdminDashboardRecentUsersController(), getAdminDashboardStatsController(), getAdminDashboardUserAnalyticsController(), buildLastTwelveMonths(), ensureAdminAccess() (+27 more)
+Cohesion: 0.15
+Nodes (33): getOrganizerDashboardRecentPurchasesController(), getOrganizerDashboardRevenueController(), getOrganizerDashboardStatsController(), getOrganizerDashboardTicketSalesController(), buildLastTwelveMonths(), ensureAdminAccess(), ensureOrganizer(), ensureSuperAdminAccess() (+25 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.12
 Nodes (33): cancelBooking(), cancelBookingInTransaction(), cancelBookingsForEvent(), cancelBookingsForEventInTransaction(), canManageAllBookings(), checkAvailability(), checkAvailabilityInTransaction(), createBooking() (+25 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.07
-Nodes (17): loginController(), meController(), registerController(), authenticate(), buildAuthResponse(), getCurrentUser(), loginUser(), registerUser() (+9 more)
+Cohesion: 0.14
+Nodes (33): runNonBlockingNotificationTasks(), cancelTicketBooking(), createBookingRecord(), createTicketBooking(), ensureAnalyticsAccess(), ensureAttendeeCanBook(), ensureBookingExists(), ensureBookingOwner() (+25 more)
 
 ### Community 7 - "Community 7"
 Cohesion: 0.14
-Nodes (32): cancelTicketBooking(), createBookingRecord(), createTicketBooking(), ensureAnalyticsAccess(), ensureAttendeeCanBook(), ensureBookingExists(), ensureBookingOwner(), ensureEventAnalyticsAccess() (+24 more)
+Nodes (31): checkVenueAvailability(), checkAvailability(), createVenueController(), deactivateVenueController(), getVenueAvailabilityController(), getVenueController(), getVenueDeactivationImpactController(), getVenuesController() (+23 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.13
-Nodes (26): getAdminFeedbackAnalyticsController(), getAdminFeedbackReviewsController(), getAttendeePastEventsController(), getMyFeedbackController(), getOrganizerFeedbackAnalyticsController(), getOrganizerFeedbackController(), submitFeedbackController(), ensureAdminAccess() (+18 more)
+Cohesion: 0.11
+Nodes (28): getAdminFeedbackAnalyticsController(), getAdminFeedbackReviewsController(), getAttendeePastEventsController(), getMyFeedbackController(), getOrganizerFeedbackAnalyticsController(), getOrganizerFeedbackController(), submitFeedbackController(), ensureAdminAccess() (+20 more)
 
 ### Community 9 - "Community 9"
-Cohesion: 0.16
-Nodes (26): deleteFromCloudinary(), createVenueController(), deactivateVenueController(), getVenueAvailabilityController(), getVenueController(), getVenuesController(), toggleVenueStatusController(), updateVenueController() (+18 more)
+Cohesion: 0.07
+Nodes (15): loginController(), meController(), registerController(), authenticate(), buildAuthResponse(), getCurrentUser(), loginUser(), registerUser() (+7 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.14
-Nodes (14): clearSession(), hydrateAuth(), login(), logout(), persistSession(), readStoredToken(), register(), onSubmit() (+6 more)
+Cohesion: 0.13
+Nodes (15): clearSession(), handleSessionExpired(), hydrateAuth(), login(), logout(), persistSession(), readStoredToken(), register() (+7 more)
 
 ### Community 11 - "Community 11"
 Cohesion: 0.19
 Nodes (17): deactivateUserController(), getUserDetailsController(), getUsersController(), updateUserRoleController(), updateUserStatusController(), assertUserVisible(), buildUserVisibilityWhere(), canTransitionRole() (+9 more)
 
 ### Community 12 - "Community 12"
-Cohesion: 0.14
-Nodes (1): handleStatusAction()
+Cohesion: 0.12
+Nodes (6): handleOpenNotification(), markAllAsRead(), markAsRead(), handleMarkAll(), loadNotifications(), openNotification()
 
 ### Community 13 - "Community 13"
 Cohesion: 0.25
@@ -256,12 +256,12 @@ Cohesion: 0.48
 Nodes (5): canEditRole(), canToggleStatus(), getRoleActionTooltip(), getStatusActionTooltip(), UserActions()
 
 ### Community 16 - "Community 16"
-Cohesion: 0.73
-Nodes (5): main(), migrateEventImages(), migrateVenueImages(), resolveLegacyUploadPath(), uploadLegacyFile()
+Cohesion: 0.33
+Nodes (0): 
 
 ### Community 17 - "Community 17"
-Cohesion: 0.4
-Nodes (0): 
+Cohesion: 0.73
+Nodes (5): main(), migrateEventImages(), migrateVenueImages(), resolveLegacyUploadPath(), uploadLegacyFile()
 
 ### Community 18 - "Community 18"
 Cohesion: 0.5
@@ -272,16 +272,16 @@ Cohesion: 0.83
 Nodes (3): EventStatusBadge(), getEventDisplayStatus(), normalizeLifecycleStatus()
 
 ### Community 20 - "Community 20"
-Cohesion: 0.5
-Nodes (2): TicketBookingModal(), useBookTicket()
-
-### Community 21 - "Community 21"
 Cohesion: 0.67
 Nodes (2): formatStatusLabel(), TicketStatusBadge()
 
-### Community 22 - "Community 22"
+### Community 21 - "Community 21"
 Cohesion: 0.67
 Nodes (2): Badge(), getRoleColor()
+
+### Community 22 - "Community 22"
+Cohesion: 0.5
+Nodes (2): TicketBookingModal(), useBookTicket()
 
 ### Community 23 - "Community 23"
 Cohesion: 0.5
@@ -1054,16 +1054,16 @@ Nodes (0):
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `sendSuccess()` connect `Community 3` to `Community 1`, `Community 4`, `Community 5`, `Community 6`, `Community 8`, `Community 9`, `Community 11`?**
-  _High betweenness centrality (0.212) - this node is a cross-community bridge._
-- **Why does `getApiErrorMessage()` connect `Community 0` to `Community 10`, `Community 3`, `Community 12`, `Community 6`?**
-  _High betweenness centrality (0.128) - this node is a cross-community bridge._
-- **Why does `registerUser()` connect `Community 6` to `Community 1`, `Community 10`?**
-  _High betweenness centrality (0.049) - this node is a cross-community bridge._
-- **Are the 63 inferred relationships involving `sendSuccess()` (e.g. with `registerController()` and `loginController()`) actually correct?**
-  _`sendSuccess()` has 63 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 30 inferred relationships involving `getApiErrorMessage()` (e.g. with `handleImageFileChange()` and `onSubmit()`) actually correct?**
-  _`getApiErrorMessage()` has 30 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `sendSuccess()` connect `Community 3` to `Community 2`, `Community 4`, `Community 5`, `Community 7`, `Community 8`, `Community 9`, `Community 11`?**
+  _High betweenness centrality (0.202) - this node is a cross-community bridge._
+- **Why does `getApiErrorMessage()` connect `Community 0` to `Community 7`, `Community 8`, `Community 9`, `Community 10`, `Community 12`?**
+  _High betweenness centrality (0.135) - this node is a cross-community bridge._
+- **Why does `registerUser()` connect `Community 9` to `Community 10`, `Community 2`, `Community 6`?**
+  _High betweenness centrality (0.056) - this node is a cross-community bridge._
+- **Are the 64 inferred relationships involving `sendSuccess()` (e.g. with `registerController()` and `loginController()`) actually correct?**
+  _`sendSuccess()` has 64 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 33 inferred relationships involving `getApiErrorMessage()` (e.g. with `handleImageFileChange()` and `onSubmit()`) actually correct?**
+  _`getApiErrorMessage()` has 33 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 6 inferred relationships involving `updateEvent()` (e.g. with `handleSubmit()` and `updateEventController()`) actually correct?**
   _`updateEvent()` has 6 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 3 inferred relationships involving `createEvent()` (e.g. with `handleSubmit()` and `createEventController()`) actually correct?**
