@@ -33,6 +33,11 @@ type NotificationRecipient = {
   role: USER_ROLE;
 };
 
+type NotificationTask = {
+  label: string;
+  operation: () => Promise<void>;
+};
+
 type EventNotificationContext = {
   id: string;
   title: string;
@@ -58,6 +63,20 @@ export interface NotificationListData {
     limit: number;
     totalPages: number;
   };
+}
+
+function logNotificationFailure(label: string, error: unknown): void {
+  console.error(`[notification] ${label} failed`, error);
+}
+
+export async function runNonBlockingNotificationTasks(tasks: NotificationTask[]): Promise<void> {
+  const results = await Promise.allSettled(tasks.map((task) => task.operation()));
+
+  results.forEach((result, index) => {
+    if (result.status === 'rejected') {
+      logNotificationFailure(tasks[index]?.label ?? 'notification task', result.reason);
+    }
+  });
 }
 
 function getNotificationDelegate(executor: PrismaExecutor = prisma) {

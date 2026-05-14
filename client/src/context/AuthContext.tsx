@@ -1,4 +1,5 @@
 import { createContext, useEffect, useState, type PropsWithChildren } from 'react';
+import { AUTH_SESSION_EXPIRED_EVENT } from '@/api/httpClient';
 import { authService, type LoginPayload, type RegisterPayload } from '@/services/auth.service';
 import type { AuthUser } from '@/types/api';
 import { AUTH_TOKEN_KEY } from '@/utils/authStorage';
@@ -57,6 +58,18 @@ export function AuthProvider({ children }: PropsWithChildren) {
     };
 
     void hydrateAuth();
+  }, []);
+
+  useEffect(() => {
+    const handleSessionExpired = (): void => {
+      clearSession();
+    };
+
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
+
+    return () => {
+      window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
+    };
   }, []);
 
   const login = async (payload: LoginPayload): Promise<AuthUser> => {

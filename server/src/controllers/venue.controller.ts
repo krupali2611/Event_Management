@@ -25,7 +25,7 @@ import {
   venueListQuerySchema,
   updateVenueBodySchema,
 } from '../validations/venue.validation';
-import { sendSuccess } from '../utils/response';
+import { AppError, sendSuccess } from '../utils/response';
 import { uploadToCloudinary } from '../utils/uploadToCloudinary';
 
 export async function createVenueController(
@@ -114,7 +114,7 @@ export async function uploadVenueImageController(
   response: Response<ApiResponse<VenueImageUploadDto>>,
 ): Promise<void> {
   if (!request.file) {
-    throw new Error('Venue image is required');
+    throw new AppError('Venue image is required', 400);
   }
 
   const uploadedImage = await uploadToCloudinary(request.file, {

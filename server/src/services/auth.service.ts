@@ -1,5 +1,5 @@
 import { prisma } from '../config/prisma';
-import { sendUserRegisteredNotification } from '../modules/notification/notification.service';
+import { runNonBlockingNotificationTasks, sendUserRegisteredNotification } from '../modules/notification/notification.service';
 import type { AuthResponseData, AuthUserDto, LoginInput, RegisterInput } from '../types/auth.types';
 import { generateToken } from '../utils/jwt';
 import { comparePassword, hashPassword } from '../utils/password';
@@ -59,12 +59,18 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponseDa
     },
   });
 
-  await sendUserRegisteredNotification({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-  });
+  await runNonBlockingNotificationTasks([
+    {
+      label: `welcome email for user ${user.id}`,
+      operation: () =>
+        sendUserRegisteredNotification({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        }),
+    },
+  ]);
 
   return buildAuthResponse(user);
 }

@@ -236,7 +236,7 @@ function VenueManagementPage() {
       />
 
       {toast ? (
-        <div className="pointer-events-none fixed bottom-6 right-6 z-50 rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm font-medium text-emerald-700 shadow-2xl shadow-emerald-100">
+        <div className="pointer-events-none fixed inset-x-4 bottom-4 z-50 rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm font-medium text-emerald-700 shadow-2xl shadow-emerald-100 sm:inset-x-auto sm:bottom-6 sm:right-6">
           {toast}
         </div>
       ) : null}

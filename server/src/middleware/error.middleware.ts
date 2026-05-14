@@ -18,6 +18,8 @@ export function errorHandler(
   response: Response<ApiResponse>,
   _next: NextFunction,
 ): void {
+  const isProduction = process.env.NODE_ENV === 'production';
+
   if (error instanceof ZodError) {
     response.status(400).json({
       success: false,
@@ -51,10 +53,14 @@ export function errorHandler(
     return;
   }
 
-  const message = error instanceof Error ? error.message : 'Internal server error';
+  if (error instanceof Error) {
+    console.error(error);
+  } else {
+    console.error('Unhandled non-error exception', error);
+  }
 
   response.status(500).json({
     success: false,
-    message,
+    message: isProduction ? 'Internal server error' : error instanceof Error ? error.message : 'Internal server error',
   });
 }

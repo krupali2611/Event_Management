@@ -378,18 +378,18 @@ function AttendeePage() {
         <p className="mt-3 text-sm text-slate-600">Browse upcoming events, then come back here after the event ends to leave a review.</p>
       </div>
 
-      <div className="inline-flex rounded-[1.4rem] border border-slate-200 bg-white p-1 shadow-sm">
+      <div className="flex w-full flex-col rounded-[1.4rem] border border-slate-200 bg-white p-1 shadow-sm sm:inline-flex sm:w-auto sm:flex-row">
         <button
           type="button"
           onClick={() => setActiveTab('upcoming')}
-          className={`rounded-[1.1rem] px-5 py-3 text-sm font-semibold transition ${activeTab === 'upcoming' ? 'bg-orange-500 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+          className={`flex-1 rounded-[1.1rem] px-5 py-3 text-sm font-semibold transition ${activeTab === 'upcoming' ? 'bg-orange-500 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
         >
           Upcoming Events
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('past')}
-          className={`rounded-[1.1rem] px-5 py-3 text-sm font-semibold transition ${activeTab === 'past' ? 'bg-orange-500 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+          className={`flex-1 rounded-[1.1rem] px-5 py-3 text-sm font-semibold transition ${activeTab === 'past' ? 'bg-orange-500 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
         >
           Past Events
         </button>

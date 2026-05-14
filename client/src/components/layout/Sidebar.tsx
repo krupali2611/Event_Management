@@ -104,7 +104,7 @@ function Sidebar({
   return (
     <>
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r px-4 py-5 transition-all duration-300 ease-out lg:translate-x-0 ${isDesktop && isDesktopCollapsed ? 'w-24' : 'w-72'} ${shellClass} ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-[85vw] max-w-72 flex-col border-r px-4 py-5 transition-all duration-300 ease-out lg:translate-x-0 ${isDesktop && isDesktopCollapsed ? 'lg:w-24' : 'lg:w-72'} ${shellClass} ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -138,7 +138,7 @@ function Sidebar({
           </div>
         </div>
 
-        <nav className="mt-6 space-y-2">
+        <nav className="mt-6 space-y-2 overflow-y-auto pr-1">
           {items.map((item) => {
             const active = activeItemPath === item.to;
             const Icon = item.icon;

@@ -71,8 +71,8 @@ function Navbar({ title, subtitle, theme, showVisualSearch = true, sidebarOpen =
           <div className="min-w-0">
             {isAttendeeVisual ? (
               <>
-                <h1 className="truncate text-[1.75rem] font-bold text-slate-950">
-                  {greeting}, {firstName}! <span className="align-middle text-xl">Hi</span>
+                <h1 className="truncate text-[1.45rem] font-bold leading-tight text-slate-950 sm:text-[1.75rem]">
+                  {greeting}, {firstName}!
                 </h1>
               </>
             ) : (
@@ -88,7 +88,7 @@ function Navbar({ title, subtitle, theme, showVisualSearch = true, sidebarOpen =
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
           {isVisual && showVisualSearch ? (
             <div className="flex h-14 min-w-0 items-center gap-3 rounded-[1.35rem] border border-white/70 bg-white/80 px-4 shadow-[0_20px_55px_-38px_rgba(15,23,42,0.35)] sm:w-[20rem] lg:w-[21rem]">
               <Search className="h-4 w-4 text-slate-400" />
@@ -103,13 +103,13 @@ function Navbar({ title, subtitle, theme, showVisualSearch = true, sidebarOpen =
             </div>
           ) : null}
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {isAuthenticated ? (
               <>
                 {isAttendeeVisual ? (
                   <Link
                     to="/my-tickets"
-                    className="inline-flex h-11 items-center justify-center rounded-2xl border border-white/80 bg-white/85 px-4 text-sm font-semibold text-orange-700 shadow-[0_20px_40px_-32px_rgba(15,23,42,0.45)] transition hover:bg-orange-50 hover:text-orange-800"
+                    className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-white/80 bg-white/85 px-4 text-sm font-semibold text-orange-700 shadow-[0_20px_40px_-32px_rgba(15,23,42,0.45)] transition hover:bg-orange-50 hover:text-orange-800 sm:w-auto"
                   >
                     My Tickets
                   </Link>
@@ -129,11 +129,11 @@ function Navbar({ title, subtitle, theme, showVisualSearch = true, sidebarOpen =
                 ) : null}
               </>
             ) : (
-              <div className="flex items-center gap-3">
+              <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
                 <button
                   type="button"
                   onClick={() => openModal('login', { redirectTo: currentPath })}
-                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  className={`w-full rounded-full px-4 py-2 text-sm font-semibold transition sm:w-auto ${
                     isVisual
                       ? 'border border-orange-200 bg-white text-orange-700 hover:bg-orange-50'
                       : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
@@ -144,7 +144,7 @@ function Navbar({ title, subtitle, theme, showVisualSearch = true, sidebarOpen =
                 <button
                   type="button"
                   onClick={() => openModal('register', { redirectTo: currentPath })}
-                  className={`rounded-full px-4 py-2 text-sm font-semibold text-white transition ${
+                  className={`w-full rounded-full px-4 py-2 text-sm font-semibold text-white transition sm:w-auto ${
                     isVisual ? 'bg-orange-500 hover:bg-orange-600' : 'bg-slate-950 hover:bg-slate-800'
                   }`}
                 >

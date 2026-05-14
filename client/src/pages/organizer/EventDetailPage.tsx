@@ -106,14 +106,14 @@ function InfoRow({
   valueClassName?: string;
 }) {
   return (
-    <div className={`flex items-center justify-between gap-4 border-b py-4 last:border-b-0 last:pb-0 first:pt-0 ${dividerClassName}`}>
+    <div className={`flex flex-col items-start gap-3 border-b py-4 last:border-b-0 last:pb-0 first:pt-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4 ${dividerClassName}`}>
       <div className="flex min-w-0 items-center gap-3">
         <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${iconClassName}`}>
           <Icon className="h-5 w-5" />
         </div>
         <span className={`text-sm font-semibold ${labelClassName}`}>{label}</span>
       </div>
-      <span className={`max-w-[58%] text-right text-sm font-semibold ${valueClassName}`}>{value}</span>
+      <span className={`w-full text-left text-sm font-semibold break-words sm:max-w-[58%] sm:text-right ${valueClassName}`}>{value}</span>
     </div>
   );
 }
@@ -881,7 +881,7 @@ function EventDetailPage() {
         : null}
 
       {toast ? (
-        <div className="pointer-events-none fixed bottom-6 right-6 z-50 rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm font-medium text-emerald-700 shadow-[0_18px_40px_rgba(16,185,129,0.18)]">
+        <div className="pointer-events-none fixed inset-x-4 bottom-4 z-50 rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm font-medium text-emerald-700 shadow-[0_18px_40px_rgba(16,185,129,0.18)] sm:inset-x-auto sm:bottom-6 sm:right-6">
           {toast}
         </div>
       ) : null}

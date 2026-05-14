@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { AUTH_TOKEN_KEY } from '@/utils/authStorage';
 
+export const AUTH_SESSION_EXPIRED_EVENT = 'auth:session-expired';
+
 const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
 const fallbackApiBaseUrl = 'http://localhost:5000/api';
 
@@ -27,6 +29,7 @@ httpClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem(AUTH_TOKEN_KEY);
+      window.dispatchEvent(new CustomEvent(AUTH_SESSION_EXPIRED_EVENT));
     }
 
     return Promise.reject(error);

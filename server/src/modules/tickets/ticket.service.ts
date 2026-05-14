@@ -16,6 +16,7 @@ import {
   ticketBookingDetailInclude,
 } from './ticket.constants';
 import {
+  runNonBlockingNotificationTasks,
   sendEventSeatsFullNotification,
   sendTicketGeneratedNotification,
   sendTicketStatusChangedNotification,
@@ -450,33 +451,39 @@ export async function createTicketBooking(
   });
 
   const soldTickets = await getConfirmedTicketsAggregate(booking.eventId);
-  await sendTicketGeneratedNotification({
-    booking: {
-      id: booking.id,
-      ticketNumber: booking.ticketNumber,
-      user: booking.user,
-      event: {
-        id: booking.event.id,
-        title: booking.event.title,
-        startDate: booking.event.startDate,
-        endDate: booking.event.endDate,
-        startTime: booking.event.startTime,
-        endTime: booking.event.endTime,
-        venue: booking.event.venue
-          ? {
-              id: booking.event.venue.id,
-              name: booking.event.venue.name,
-              location: booking.event.venue.location,
-            }
-          : null,
-        organizer: {
-          id: booking.event.organizer.id,
-          name: booking.event.organizer.name,
-          email: booking.event.organizer.email,
-        },
-      },
+  await runNonBlockingNotificationTasks([
+    {
+      label: `ticket generated notification for booking ${booking.id}`,
+      operation: () =>
+        sendTicketGeneratedNotification({
+          booking: {
+            id: booking.id,
+            ticketNumber: booking.ticketNumber,
+            user: booking.user,
+            event: {
+              id: booking.event.id,
+              title: booking.event.title,
+              startDate: booking.event.startDate,
+              endDate: booking.event.endDate,
+              startTime: booking.event.startTime,
+              endTime: booking.event.endTime,
+              venue: booking.event.venue
+                ? {
+                    id: booking.event.venue.id,
+                    name: booking.event.venue.name,
+                    location: booking.event.venue.location,
+                  }
+                : null,
+              organizer: {
+                id: booking.event.organizer.id,
+                name: booking.event.organizer.name,
+                email: booking.event.organizer.email,
+              },
+            },
+          },
+        }),
     },
-  });
+  ]);
 
   if (soldTickets >= booking.event.attendeeLimit) {
     const organizer = await getEventDelegate().findUnique({
@@ -506,7 +513,12 @@ export async function createTicketBooking(
     });
 
     if (organizer) {
-      await sendEventSeatsFullNotification({ event: organizer });
+      await runNonBlockingNotificationTasks([
+        {
+          label: `event seats full notification for event ${organizer.id}`,
+          operation: () => sendEventSeatsFullNotification({ event: organizer }),
+        },
+      ]);
     }
   }
 
@@ -577,34 +589,40 @@ export async function cancelTicketBooking(id: string, user: AuthenticatedUser): 
   });
 
   const soldTickets = await getConfirmedTicketsAggregate(booking.eventId);
-  await sendTicketStatusChangedNotification({
-    booking: {
-      id: booking.id,
-      ticketNumber: booking.ticketNumber,
-      bookingStatus: booking.bookingStatus,
-      user: booking.user,
-      event: {
-        id: booking.event.id,
-        title: booking.event.title,
-        startDate: booking.event.startDate,
-        endDate: booking.event.endDate,
-        startTime: booking.event.startTime,
-        endTime: booking.event.endTime,
-        venue: booking.event.venue
-          ? {
-              id: booking.event.venue.id,
-              name: booking.event.venue.name,
-              location: booking.event.venue.location,
-            }
-          : null,
-        organizer: {
-          id: booking.event.organizer.id,
-          name: booking.event.organizer.name,
-          email: booking.event.organizer.email,
-        },
-      },
+  await runNonBlockingNotificationTasks([
+    {
+      label: `ticket cancellation notification for booking ${booking.id}`,
+      operation: () =>
+        sendTicketStatusChangedNotification({
+          booking: {
+            id: booking.id,
+            ticketNumber: booking.ticketNumber,
+            bookingStatus: booking.bookingStatus,
+            user: booking.user,
+            event: {
+              id: booking.event.id,
+              title: booking.event.title,
+              startDate: booking.event.startDate,
+              endDate: booking.event.endDate,
+              startTime: booking.event.startTime,
+              endTime: booking.event.endTime,
+              venue: booking.event.venue
+                ? {
+                    id: booking.event.venue.id,
+                    name: booking.event.venue.name,
+                    location: booking.event.venue.location,
+                  }
+                : null,
+              organizer: {
+                id: booking.event.organizer.id,
+                name: booking.event.organizer.name,
+                email: booking.event.organizer.email,
+              },
+            },
+          },
+        }),
     },
-  });
+  ]);
   return toTicketBookingDto(booking, soldTickets);
 }
 
@@ -638,34 +656,40 @@ export async function updateTicketBookingStatus(
   });
 
   const soldTickets = await getConfirmedTicketsAggregate(updatedBooking.eventId);
-  await sendTicketStatusChangedNotification({
-    booking: {
-      id: updatedBooking.id,
-      ticketNumber: updatedBooking.ticketNumber,
-      bookingStatus: updatedBooking.bookingStatus,
-      user: updatedBooking.user,
-      event: {
-        id: updatedBooking.event.id,
-        title: updatedBooking.event.title,
-        startDate: updatedBooking.event.startDate,
-        endDate: updatedBooking.event.endDate,
-        startTime: updatedBooking.event.startTime,
-        endTime: updatedBooking.event.endTime,
-        venue: updatedBooking.event.venue
-          ? {
-              id: updatedBooking.event.venue.id,
-              name: updatedBooking.event.venue.name,
-              location: updatedBooking.event.venue.location,
-            }
-          : null,
-        organizer: {
-          id: updatedBooking.event.organizer.id,
-          name: updatedBooking.event.organizer.name,
-          email: updatedBooking.event.organizer.email,
-        },
-      },
+  await runNonBlockingNotificationTasks([
+    {
+      label: `ticket status change notification for booking ${updatedBooking.id}`,
+      operation: () =>
+        sendTicketStatusChangedNotification({
+          booking: {
+            id: updatedBooking.id,
+            ticketNumber: updatedBooking.ticketNumber,
+            bookingStatus: updatedBooking.bookingStatus,
+            user: updatedBooking.user,
+            event: {
+              id: updatedBooking.event.id,
+              title: updatedBooking.event.title,
+              startDate: updatedBooking.event.startDate,
+              endDate: updatedBooking.event.endDate,
+              startTime: updatedBooking.event.startTime,
+              endTime: updatedBooking.event.endTime,
+              venue: updatedBooking.event.venue
+                ? {
+                    id: updatedBooking.event.venue.id,
+                    name: updatedBooking.event.venue.name,
+                    location: updatedBooking.event.venue.location,
+                  }
+                : null,
+              organizer: {
+                id: updatedBooking.event.organizer.id,
+                name: updatedBooking.event.organizer.name,
+                email: updatedBooking.event.organizer.email,
+              },
+            },
+          },
+        }),
     },
-  });
+  ]);
 
   return toTicketBookingDto(updatedBooking, soldTickets);
 }
