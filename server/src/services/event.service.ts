@@ -268,7 +268,7 @@ async function createEventRecord(
 
   const insertedRows = await executor.$queryRaw<Array<{ id: string; status: EventStatus }>>`
     INSERT INTO "Event" (
-      "clientRequestId",
+      ${hasClientRequestId ? Prisma.sql`"clientRequestId",` : Prisma.empty}
       "title",
       "description",
       "bannerImage",
@@ -285,7 +285,7 @@ async function createEventRecord(
       "status"
     )
     VALUES (
-      ${payload.clientRequestId},
+      ${hasClientRequestId ? Prisma.sql`${payload.clientRequestId},` : Prisma.empty}
       ${payload.title},
       ${payload.description},
       ${payload.bannerImage},
@@ -938,6 +938,7 @@ async function findEventByClientRequestId(clientRequestId: string | undefined, o
 export async function createEvent(payload: CreateEventInput, actor: AuthenticatedUser): Promise<EventDto> {
   const eventDelegate = getEventDelegate();
   const normalizedPayload = normalizeEventPayload(payload);
+  const initialStatus: EventStatus = 'PUBLISHED';
   const startDate = new Date(normalizedPayload.startDate);
   const endDate = new Date(normalizedPayload.endDate);
   ensureValidDateRange(startDate, endDate);
@@ -999,17 +1000,13 @@ export async function createEvent(payload: CreateEventInput, actor: Authenticate
             startTime: normalizedPayload.startTime ?? null,
             endTime: normalizedPayload.endTime ?? null,
             attendeeLimit: normalizedPayload.attendeeLimit,
-            venueId: normalizedPayload.venueId ?? null,
+            venueId: normalizedPayload.venueId,
             organizerId: normalizedPayload.organizerId,
-            status: normalizedPayload.status ?? 'DRAFT',
+            status: initialStatus,
           },
           optionalImageData,
           optionalScalarData,
         );
-
-        if (!normalizedPayload.venueId || event.status !== 'PUBLISHED') {
-          return event;
-        }
 
         await reserveVenueForPublishedEvent(event.id, {
           executor: transaction,
@@ -1100,30 +1097,16 @@ export async function getEvents(query: EventListQuery, user: AuthenticatedUser):
 
   const isAttendeeQuery = user.role === 'ATTENDEE';
   const skip = (query.page - 1) * query.limit;
-  const [items, totalItems] = isAttendeeQuery
-    ? await Promise.all([
-        getEventDelegate().findMany({
-          where: whereClause,
-          select: (await getEventSelect(true)) as never,
-          orderBy: [{ startDate: 'asc' }, { createdAt: 'desc' }],
-        }),
-        Promise.resolve(0),
-      ])
-    : await Promise.all([
-        getEventDelegate().findMany({
-          where: whereClause,
-          select: (await getEventSelect(true)) as never,
-          orderBy: [{ startDate: 'asc' }, { createdAt: 'desc' }],
-          skip,
-          take: query.limit,
-        }),
-        getEventDelegate().count({ where: whereClause }),
-      ]);
+  const items = await getEventDelegate().findMany({
+    where: whereClause,
+    select: (await getEventSelect(true)) as never,
+    orderBy: [{ startDate: 'asc' }, { createdAt: 'desc' }],
+  });
 
   const eventsWithMetrics = (await attachTicketMetrics(items as EventRecord[])).sort(compareEventsForList);
-  const attendeeVisibleEvents = isAttendeeQuery ? eventsWithMetrics.filter(isEventVisibleToAttendees) : eventsWithMetrics;
-  const paginatedEvents = isAttendeeQuery ? attendeeVisibleEvents.slice(skip, skip + query.limit) : attendeeVisibleEvents;
-  const resolvedTotalItems = isAttendeeQuery ? attendeeVisibleEvents.length : totalItems;
+  const visibleEvents = isAttendeeQuery ? eventsWithMetrics.filter(isEventVisibleToAttendees) : eventsWithMetrics;
+  const paginatedEvents = visibleEvents.slice(skip, skip + query.limit);
+  const resolvedTotalItems = visibleEvents.length;
 
   return {
     events: paginatedEvents.map(toEventDto),

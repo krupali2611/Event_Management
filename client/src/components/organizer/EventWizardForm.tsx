@@ -52,7 +52,7 @@ const eventFormSchema = z
     endTime: z.string().optional(),
     attendeeLimit: requiredPositiveInteger('Attendee limit'),
     venueId: z.string().trim().min(1, 'Venue selection is required'),
-    status: z.enum(['DRAFT', 'PUBLISHED', 'CANCELLED']),
+    status: z.literal('PUBLISHED'),
   })
   .refine(
     (value) => {
@@ -91,7 +91,7 @@ function toDefaultValues(initialEvent?: EventItem): EventWizardInput {
     endTime: initialEvent?.endTime ?? '',
     attendeeLimit: initialEvent?.attendeeLimit?.toString() ?? '',
     venueId: initialEvent?.venueId ?? '',
-    status: initialEvent?.status ?? 'DRAFT',
+    status: 'PUBLISHED',
   };
 }
 
@@ -338,19 +338,11 @@ function EventWizardForm({
                     <FieldError message={errors.category?.message} />
                   </div>
                   {mode === 'create' ? (
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-slate-700">Status</label>
-                      <select
-                        {...register('status')}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-500 focus:bg-white"
-                      >
-                        <option value="DRAFT">Draft</option>
-                        <option value="PUBLISHED">Published</option>
-                      </select>
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
+                      New events are published immediately after creation.
                     </div>
-                  ) : (
-                    <input type="hidden" {...register('status')} />
-                  )}
+                  ) : null}
+                  <input type="hidden" {...register('status')} defaultValue="PUBLISHED" />
                 </div>
               </div>
             </Card>

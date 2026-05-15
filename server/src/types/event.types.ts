@@ -74,7 +74,7 @@ export interface CreateEventInput {
   startTime?: string;
   endTime?: string;
   attendeeLimit: number;
-  venueId?: string;
+  venueId: string;
   organizerId: string;
   status?: EventStatus;
 }

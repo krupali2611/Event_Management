@@ -267,8 +267,8 @@ function EventDetailPage() {
       return;
     }
 
-    const nextStatus = event.status === 'DRAFT' ? 'PUBLISHED' : event.status === 'PUBLISHED' ? 'CANCELLED' : 'DRAFT';
-    const successMessage = nextStatus === 'PUBLISHED' ? 'Event Published' : nextStatus === 'CANCELLED' ? 'Event Cancelled' : 'Moved to Draft';
+    const nextStatus = event.status === 'PUBLISHED' ? 'CANCELLED' : 'PUBLISHED';
+    const successMessage = nextStatus === 'PUBLISHED' ? 'Event Published' : 'Event Cancelled';
 
     try {
       setSubmitting(true);

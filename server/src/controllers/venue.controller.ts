@@ -117,7 +117,7 @@ export async function uploadVenueImageController(
     throw new AppError('Venue image is required', 400);
   }
 
-  const uploadedImage = await uploadToCloudinary(request.file, {
+  const uploadedImage = await uploadToCloudinary(request, request.file, {
     folder: 'event-management-system/venues',
   });
 

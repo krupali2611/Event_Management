@@ -56,14 +56,14 @@ async function getUploadedEventImages(request: AuthenticatedRequest): Promise<{
   const galleryFiles = uploadedFiles?.galleryImageFiles ?? [];
   const [uploadedBanner, uploadedGallery] = await Promise.all([
     bannerFile
-      ? uploadToCloudinary(bannerFile, {
+      ? uploadToCloudinary(request, bannerFile, {
           folder: 'event-management-system/events/banners',
         })
       : Promise.resolve(null),
     galleryFiles.length > 0
       ? Promise.all(
           galleryFiles.map((file) =>
-            uploadToCloudinary(file, {
+            uploadToCloudinary(request, file, {
               folder: 'event-management-system/events/gallery',
             }),
           ),

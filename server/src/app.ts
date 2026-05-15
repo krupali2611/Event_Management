@@ -1,3 +1,5 @@
+import { mkdirSync } from 'fs';
+import path from 'path';
 import cors from 'cors';
 import express from 'express';
 import { env } from './config/env';
@@ -13,6 +15,10 @@ app.use(
   }),
 );
 app.use(express.json());
+
+const uploadsRoot = path.resolve(process.cwd(), 'uploads');
+mkdirSync(uploadsRoot, { recursive: true });
+app.use('/uploads', express.static(uploadsRoot));
 
 app.use('/api', apiRouter);
 

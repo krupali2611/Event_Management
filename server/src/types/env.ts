@@ -4,9 +4,9 @@ export interface EnvConfig {
   jwtSecret: string;
   jwtExpiresIn: string;
   nodeEnv: string;
-  cloudinaryCloudName: string;
-  cloudinaryApiKey: string;
-  cloudinaryApiSecret: string;
+  cloudinaryCloudName?: string;
+  cloudinaryApiKey?: string;
+  cloudinaryApiSecret?: string;
   brevoApiKey?: string;
   brevoSenderEmail?: string;
   brevoSenderName: string;

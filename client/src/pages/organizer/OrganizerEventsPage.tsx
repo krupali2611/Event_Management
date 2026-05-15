@@ -205,7 +205,6 @@ function OrganizerEventsPage() {
               className="rounded-[1.3rem] border border-slate-200/80 bg-white/90 px-4 py-4 text-sm text-slate-900 outline-none transition focus:border-brand-500 md:w-[190px]"
             >
               <option value="">All Status</option>
-              <option value="DRAFT">Draft</option>
               <option value="PUBLISHED">Published</option>
               <option value="CANCELLED">Cancelled</option>
             </select>

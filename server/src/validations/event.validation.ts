@@ -56,7 +56,7 @@ export const createEventBodySchema = z
     startTime: optionalTrimmedString,
     endTime: optionalTrimmedString,
     attendeeLimit: positiveInteger,
-    venueId: z.string().trim().min(1).optional(),
+    venueId: z.string().trim().min(1, 'Venue selection is required'),
     status: creatableStatusSchema.optional(),
   })
   .refine((value) => new Date(value.startDate).getTime() <= new Date(value.endDate).getTime(), {
